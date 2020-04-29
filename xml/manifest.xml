@@ -1,0 +1,26 @@
+<secure_debug_manager>
+	<lib_name>secure_debug_manager</lib_name>
+	<dep>lib2</dep>
+	<dep>lib2</dep>
+	<target>
+	  <mailbox apidr="0x04762000" info="SDC-600"/>
+	</target>
+	<options>
+	  <file_selection enable="true">
+	    <help>Please choose a certificate.</help>
+	    <extensions>
+	      <extension>.cert</extension>
+	    </extensions>
+	  </file_selection>
+	</options>
+	<localization>
+	  <language id="en">
+	    <string id="file-msg">blah blah blah</string>
+	    <string id="foo">blah blah blah</string>
+	    <string id="bar">blah blah blah</string>
+	  </language>
+	  <language id="de">
+	    <string id="file-msg">blah blah blah</string>
+	  </language>
+	</localization>
+</secure_debug_manager>

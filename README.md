@@ -1,3 +1,7 @@
-# calico_api
+# PSA Debug Access Control API
 
-API definition for secure debug.
+This repository contains API definitions for these interfaces:
+
+- Secure Debug Manager
+- Secure Debug Authenticator
+
