@@ -1,10 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
 <secure_debug_manager>
+  <!--
+    List of libraries to load
+  -->
 	<lib_name>secure_debug_manager</lib_name>
 	<dep>lib2</dep>
 	<dep>lib2</dep>
+  <!--
+    Functionality supported by the SDM implementation
+  -->
+	<capabilities>
+	  <feature name="resume-boot" enable="true"/>
+	  <feature name="multiple-authentications" enable="true"/>
+	</capabilities>
+  <!--
+    Information used by the debugger for discovering target details, including detecting the
+    debugger mailbox. This would then be used as the default device for callbacks.
+  -->
 	<target>
-	  <mailbox apidr="0x04762000" info="SDC-600"/>
+	  <mailbox apidr="0x04762000" info="SDC-600"/> <!-- Example: Arm SDC-600 -->
+	  <mailbox apidr="0x002a0000" info="DM-AP"/> <!-- Example: NXP's DM-AP -->
 	</target>
+  <!--
+    Options to show the user prior to performing an authentication.
+  -->
 	<options>
 	  <file_selection enable="true">
 	    <help>Please choose a certificate.</help>
@@ -13,6 +32,9 @@
 	    </extensions>
 	  </file_selection>
 	</options>
+  <!--
+    Simple l10n support by matching static string values.
+  -->
 	<localization>
 	  <language id="en">
 	    <string id="file-msg">blah blah blah</string>
