@@ -15,6 +15,16 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup secure_debug_manager Secure Debug Manager
+ * @brief Top-level API for secure debug library.
+ *
+ * The Secure Debug Manager API defines the interface used by debug clients, such as debuggers,
+ * IDEs, and other tools, for performing protocol-independant secure debug authentication.
+ *
+ * @{
+ */
+
  /**
  * \file
  *
@@ -27,6 +37,7 @@
 
 #include <stddef.h>
 
+#ifndef SKIP_FOR_DOXYGEN
 #ifdef _WIN32
 #ifdef SDM_EXPORT_SYMBOLS
 #define SDM_EXTERN __declspec(dllexport)
@@ -36,6 +47,7 @@
 #else
 #define SDM_EXTERN
 #endif
+#endif // SKIP_FOR_DOXYGEN
 
 enum _SDMVersion {
     SDM_CurrentVersion = 1, /*!< Use for SDMDebugIf::version */
@@ -239,5 +251,7 @@ SDM_EXTERN SDMReturnCode SDM_Close(SDMHandle handle);
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif /* _SECURE_DEBUG_MANAGER_H_ */
