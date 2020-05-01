@@ -37,6 +37,7 @@
 #define _SECURE_DEBUG_MANAGER_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifndef SKIP_FOR_DOXYGEN
 #ifdef _WIN32
@@ -282,9 +283,15 @@ typedef struct SDMOpenParameters {
 //    uint64_t commChannelBaseAddress; /*!< Base address of the communications channel. This can be an (APSEL<<24), AP address, or memory window base address. The comm link shared library must be selected to match the comm channel type represented by this address */
 } SDMOpenParameters;
 
+typedef enum SDMExecutionContext {
+    SDM_Boot_ROM,
+    SDM_Boot_Loader,
+    SDM_Boot_Runtime
+} SDMExecutionContext;
+
 typedef struct SDMAuthenticateParams {
     SDMExecutionContext expectedExecutionContext;
-    bool isLastAuthentication;
+    uint8_t isLastAuthentication;
 } SDMAuthenticateParams;
 
 #ifdef __cplusplus
