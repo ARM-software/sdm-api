@@ -210,7 +210,7 @@ typedef struct SDMCallbacks {
      * @param[in] value
      * @param[in] refcon
      */
-    SDMReturnCode (*apWrite)(uint64_t device, uint64_t registerAddress, const uint32_t *value, void *refcon);
+    SDMReturnCode (*apWrite)(uint64_t device, uint64_t registerAddress, uint32_t value, void *refcon);
     //@}
 
     //! @name Memory accesses
