@@ -1,25 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+Manifest files will most-likely be SoC- or family-specific.
+-->
 <secure_debug_manager>
   <!--
     List of libraries to load
   -->
-  <lib_name>secure_debug_manager</lib_name>
+  <lib_name>../../../build/native/libpsa_sdm.dylib</lib_name>
+<!--
   <dep>lib2</dep>
   <dep>lib2</dep>
+ -->
   <!--
-    Functionality supported by the SDM implementation
+    Functionality supported and/or required by the SDM implementation.
   -->
   <capabilities>
+    <feature name="debug-architecture:adiv5" enable="true"/>
+    <feature name="debug-architecture:adiv6" enable="true"/>
     <feature name="resume-boot" enable="true"/>
     <feature name="multiple-authentications" enable="true"/>
+    <feature name="arm-debug-sequence" required="true"/> <!-- just an idea -->
   </capabilities>
   <!--
     Information used by the debugger for discovering target details, including detecting the
     debugger mailbox. This would then be used as the default device for callbacks.
   -->
   <target>
-    <mailbox apidr="0x04762000" info="SDC-600"/> <!-- Example: Arm SDC-600 -->
-    <mailbox apidr="0x002a0000" info="DM-AP"/> <!-- Example: NXP's DM-AP -->
+    <!-- Example: Arm SDC-600 -->
+    <mailbox apidr="0x04762000" info="SDC-600" id="1"/>
+
+    <!-- Example: NXP's DM-AP -->
+    <mailbox apidr="0x002a0000" info="DM-AP" id="2"/>
+
+    <!-- Example: SiLab's mailbox APB-AP (finish) -->
+    <mailbox type="coresight" idr="0x54770002" index="3" info="DM-AP" id="3"/>
+
+    <!-- todo: memory window -->
   </target>
   <!--
     Options to show the user prior to performing an authentication.
