@@ -53,20 +53,12 @@
 
 /*!
  * @brief API version number constants.
+ *
+ * These version numbers are used for SDMOopenParams::version.
  */
-enum _SDMVersion {
-    SDM_CurrentVersion = 1, /*!< Use for SDMOopenParams::version */
+enum SDMVersion {
+    SDM_CurrentVersion = 1, /*!< Current API version. */
 };
-
-/*!
- * @brief Reset method to use.
- */
-typedef enum SDMResetType {
-    SDM_none = 0, /*!< No reset*/
-//     SDM_COMPortReset = 1, /*!< SDC-600 External COM port remote reboot */
-    SDM_HardwareReset = 2, /*!< Full system reset via nSRST pin */
-    SDM_SoftwareReset
-} SDMResetType;
 
 /*!
  * @brief Return codes for SDM APIs and callbacks.
@@ -80,14 +72,39 @@ typedef enum SDMReturnCode {
     SDM_Fail_Internal = 5, /*!< An unspecified internal error occurred */
 } SDMReturnCode;
 
-enum _SDMFlags {
-    SDM_IsADIv6
+//! @brief Opaque handle to an opened instance of the SDM.
+typedef struct _SDMOpaqueHandle * SDMHandle;
+
+/*!
+ * @brief Possible debug architectures.
+ */
+typedef enum SDMDebugArchitecture {
+    SDM_Arm_ADIv5 = 0,  //!< Arm ADIv5 debug architecture. Uses #SDMArmADICallbacks.
+    SDM_Arm_ADIv6 = 1,  //!< Arm ADIv6 debug architecture. Uses #SDMArmADICallbacks.
+    SDM_Nexus5001 = 2,  //!< Nexus 5001 (IEEE-ISTO 5001-2003) debug architecture. Uses #SDMNexus5001Callbacks.
+} SDMDebugArchitecture;
+
+/*!
+ * @brief Reset method to use.
+ */
+typedef enum SDMResetType {
+    SDM_NoReset = 0, /*!< No reset*/
+//     SDM_COMPortReset = 1, /*!< SDC-600 External COM port remote reboot */
+    SDM_HardwareReset = 2, /*!< Full system reset via nSRST pin */
+    SDM_SoftwareReset = 3, /*!< Full system reset via software reset mechanism */
+} SDMResetType;
+
+/*!
+ * @brief Flags for SDMOpenParameters.
+ */
+enum SDMFlags {
+    SDM_IsDefaultDeviceInfoValid = (1 << 0),
 };
 
 /*!
  * @brief Transfer sizes for memory transfer callbacks.
  *
- * These enums are used with the SDMCallbacks::readMemory() and SDMCallbacks::writeMemory()
+ * These enums are used with the SDMArmADICallbacks::readMemory() and SDMArmADICallbacks::writeMemory()
  * callbacks.
  *
  * Note that not all MEM-APs support all transfer sizes. If a transfer with an unsupported size is
@@ -100,16 +117,14 @@ typedef enum SDMMemorySize {
     SDM_Memory64,   //!< Perform a 64-bit memory transfer.
 } SDMMemorySize;
 
-typedef struct _SDMOpaqueHandle * SDMHandle;
-
 /*!
- * @brief Item details for SDMCallbacks::selectItem() callback.
+ * @brief Item details for SDMArmADICallbacks::selectItem() callback.
  *
  * The item info consists of a pair of strings. The first is a short name for the item. This will
  * appear in the list from which the user selects an item. When an item is selected, the long
  * description should be shown to provide the user more information.
  */
-typedef struct _SDMItemInfo {
+typedef struct SDMItemInfo {
     const char *itemShortName; /*!< Item name that will appear in the list. Must not be NULL. */
     const char *itemLongDescription; /*!< Optional descriptive text for this item. Can be NULL. */
 } SDMItemInfo;
@@ -121,8 +136,22 @@ enum {
     SDM_DefaultDevice = -1,
 };
 
+// Forward declare.
+struct SDMArmADICallbacks;
+struct SDMNexus5001Callbacks;
+
 /*!
- * \brief Collection of callback functions provided by the debugger.
+ * @brief Union to map callback structure for the specific debug architecture.
+ */
+typedef union SDMArchitectureCallbacks {
+    struct SDMArmADICallbacks *armADICallbacks;    //!< Callbacks for the Arm ADIv5 and ADIv6 debug architectures.
+    struct SDMNexus5001Callbacks *nexus5001Callbacks;  //!< Callbacks for the Nexus 5001 debug architecture.
+} SDMArchitectureCallbacks;
+
+/*!
+ * @brief Collection of common callback functions provided by the debugger.
+ *
+ * Debug archicture-specific callbacks are accessed through the architectureCallbacks member.
  *
  * This interface is not designed for performance but for simplicity.
  *
@@ -133,12 +162,15 @@ enum {
  * SDMOpenParameters::refcon field that was provided to SDMOpen().
  */
 typedef struct SDMCallbacks {
+    //! @brief Debug archicture-specific callbacks.
+    SDMArchitectureCallbacks architectureCallbacks;
+
     //! @name User interaction
     //@{
     /*!
      * @brief Inform the debugger of the current authentication progress.
      *
-     * This callback should only be invoked during a call to the SDMAuthenticate() API. Otherwise
+     * This callback should only be invoked during a call to the SDM_Authenticate() API. Otherwise
      * calls will be ignored.
      *
      * @param progressMessage
@@ -180,44 +212,15 @@ typedef struct SDMCallbacks {
     SDMReturnCode (*resetFinish)(void *refcon);
     //@}
 
-// are these callbacks relative to the comm channel? -> YES
-//  - makes more sense
-//  - don't encode the AP address
-
-// also support absolute addresses
-
-    //! @name AP accesses
-    //!
-    //! The _device_ parameter indicates the address of the AP to access. It can also be set to
-    //! @ref SDM_DefaultDevice, and the debugger will use a default AP. For ADIv5 systems, the
-    //! AP address is an APSEL value in the range 0-255. For ADIv6 systems, the AP address is an
-    //! APB address whose width depends on the target implementation.
-    //@{
-    /*!
-     * @brief Read an AP register.
-     *
-     * @param[in] device Address of the AP or #SDM_DefaultDevice.
-     * @param[in] registerAddress
-     * @param[out] value
-     * @param[in] refcon
-     */
-    SDMReturnCode (*apRead)(uint64_t device, uint64_t registerAddress, uint32_t *value, void *refcon);
-    /*!
-     * @brief Write an AP register.
-     *
-     * @param[in] device Address of the AP or #SDM_DefaultDevice.
-     * @param[in] registerAddress
-     * @param[in] value
-     * @param[in] refcon
-     */
-    SDMReturnCode (*apWrite)(uint64_t device, uint64_t registerAddress, uint32_t value, void *refcon);
-    //@}
-
     //! @name Memory accesses
     //!
-    //! The _device_ parameter indicates the address of the MEM-AP to use. It can also be set to
-    //! #SDM_DefaultDevice, and the debugger will use a default MEM-AP. The _address_ parameter
-    //! is always the address to access within the memory space controlled by the selected MEM-AP.
+    //! The _device_ parameter indicates the a debug-architecture-defined address fior the interface
+    //! to the memory system. It can also be set to #SDM_DefaultDevice, and the debugger will use a
+    //! default memory interface device. For the Arm ADI architecture, this is the address of the
+    //! MEM-AP to use.
+    //!
+    //! The _address_ parameter is always the address to access within the memory space controlled
+    //! by the selected MEM-AP.
     //!
     //! Addresses must be aligned to transfer size.
     //@{
@@ -271,35 +274,98 @@ typedef struct SDMCallbacks {
 } SDMCallbacks;
 
 /*!
- * \brief Parameters passed to SDM_Open() by the debugger.
+ * @brief Arm ADI architecture-specific callbacks.
+ */
+typedef struct SDMArmADICallbacks {
+    //! @name Debug sequences
+    //@{
+    /*!
+     * @brief Invoke a CMSIS debug sequence by name.
+     */
+    SDMReturnCode (*invokeDebugSequence)(const char *name, const char *pname);
+    //@}
+
+    //! @name AP accesses
+    //!
+    //! The _device_ parameter indicates the address of the AP to access. It can also be set to
+    //! @ref SDM_DefaultDevice, and the debugger will use a default AP. For ADIv5 systems, the
+    //! AP address is an APSEL value in the range 0-255. For ADIv6 systems, the AP address is an
+    //! APB address whose width depends on the target implementation.
+    //@{
+    /*!
+     * @brief Read an AP register.
+     *
+     * @param[in] device Address of the AP or #SDM_DefaultDevice.
+     * @param[in] registerAddress
+     * @param[out] value
+     * @param[in] refcon
+     */
+    SDMReturnCode (*apRead)(uint64_t device, uint64_t registerAddress, uint32_t *value, void *refcon);
+    /*!
+     * @brief Write an AP register.
+     *
+     * @param[in] device Address of the AP or #SDM_DefaultDevice.
+     * @param[in] registerAddress
+     * @param[in] value
+     * @param[in] refcon
+     */
+    SDMReturnCode (*apWrite)(uint64_t device, uint64_t registerAddress, uint32_t value, void *refcon);
+    //@}
+} SDMArmADICallbacks;
+
+/*!
+ * @brief Supported types of default devices.
+ */
+typedef enum SDMDefaultDeviceType {
+    SDM_ArmADI_AP = 0,
+    SDM_ArmADI_MEM_AP = 1,
+    SDM_ArmADI_CoreSight_Component = 2,
+} SDMDefaultDeviceType;
+
+/*!
+ * @brief Information about the default device.
+ */
+typedef struct SDMDefaultDeviceInfo {
+    SDMDefaultDeviceType deviceType; //!< Type of the matched default device.
+    uint64_t address;   //!< Base address of the device.
+} SDMDefaultDeviceInfo;
+
+/*!
+ * @brief Parameters passed to SDM_Open() by the debugger.
  */
 typedef struct SDMOpenParameters {
     uint32_t version; /*!< Client interface version, should be set to #SDM_CurrentVersion. */
+    SDMDebugArchitecture debugArchitecture; /*!< Debug architecture for the target. */
     SDMCallbacks *callbacks; /*!< Callback collection */
     void *refcon; /*!< Debugger-supplied value passed to each of the callbacks. */
-    uint8_t adiVersion; /*!< ADI version of the target, either 5 or 6. */
     uint32_t flags; /*!< Flags passed to the SDM from the debugger. */
     const char *userSelectedFilePath; /*!< Path to file chosen by the user in connection config. Not valid if NULL. */
-//    uint64_t commChannelBaseAddress; /*!< Base address of the communications channel. This can be an (APSEL<<24), AP address, or memory window base address. The comm link shared library must be selected to match the comm channel type represented by this address */
+    SDMDefaultDeviceInfo defaultDeviceInfo; /*!< Information about the default device. */
 } SDMOpenParameters;
 
+/*!
+ * @brief Possible execution contexts.
+ */
 typedef enum SDMExecutionContext {
-    SDM_Boot_ROM,
-    SDM_Boot_Loader,
-    SDM_Boot_Runtime
+    SDM_Boot_ROM = 0,
+    SDM_Boot_Loader = 1,
+    SDM_Runtime = 2,
 } SDMExecutionContext;
 
-typedef struct SDMAuthenticateParams {
+/*!
+ * @brief Parameters passed by the debugger to the SDM_Authenticate() API.
+ */
+typedef struct SDMAuthenticateParameters {
     SDMExecutionContext expectedExecutionContext;
     uint8_t isLastAuthentication;
-} SDMAuthenticateParams;
+} SDMAuthenticateParameters;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*!
- * This function is called by the debugger to start a secure debug session with the remote platform
+ * @brief This function is called by the debugger to start a secure debug session with the remote platform
  *
  * The caller is expected to set the resetType to a value other than link SDM_none when
  * it knows that the debugged platform implements the secure debug certificate processing in its ROM.
@@ -311,7 +377,6 @@ extern "C" {
  * @param[in] params Connection details and callbacks.
  */
 SDM_EXTERN SDMReturnCode SDM_Open(SDMHandle *handle, SDMOpenParameters *params);
-// -> why was resetType removed? what implications does this have?
 
 // SDM_EXTERN SDMReturnCode SDM_PreAuthentication(SDMHandle handle);
 
@@ -324,10 +389,7 @@ SDM_EXTERN SDMReturnCode SDM_Open(SDMHandle *handle, SDMOpenParameters *params);
  * @param[in] handle Handle to the SDM instance.
  * @param[in] params P
  */
-SDM_EXTERN SDMReturnCode SDM_Authenticate(SDMHandle handle, const SDMAuthenticateParams *params);
-// deal with
-// - reset type/exec context
-// - multiple auths
+SDM_EXTERN SDMReturnCode SDM_Authenticate(SDMHandle handle, const SDMAuthenticateParameters *params);
 
 /*!
  * @brief Called by the debugger to resume the boot of the remote platform.
