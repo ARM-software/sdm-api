@@ -6,7 +6,7 @@ Manifest files will most-likely be SoC- or family-specific.
   <!--
     List of libraries to load
   -->
-  <lib_name>../../../build/native/libpsa_sdm.dylib</lib_name>
+  <lib_name>../../../build/native/Debug/libpsa_sdm.dylib</lib_name>
 <!--
   <dep>lib2</dep>
   <dep>lib2</dep>
