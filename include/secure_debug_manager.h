@@ -54,7 +54,7 @@
 /*!
  * @brief API version number constants.
  *
- * These version numbers are used for SDMOopenParams::version.
+ * These version numbers are used for #SDMOpenParameters::version.
  */
 enum SDMVersion {
     SDM_CurrentVersion = 1, /*!< Current API version. */
@@ -63,14 +63,18 @@ enum SDMVersion {
 /*!
  * @brief Return codes for SDM APIs and callbacks.
  */
-typedef enum SDMReturnCode {
+enum SDMReturnCode {
     SDM_Success = 0, /*!< Success, no error */
     SDM_Fail_No_Response = 1, /*!< No response, timeout */
     SDM_Fail_Unsupported_Transfer_Size = 2, /*!< MEM-AP does not support the requested transfer size. */
     SDM_Fail_User_Credentials = 3, /*!< Invalid user credentials for the debugged platform */
     SDM_Fail_IO = 4, /*!< Failed to transmit/receive data to/from the device */
     SDM_Fail_Internal = 5, /*!< An unspecified internal error occurred */
-} SDMReturnCode;
+    SDM_Fail_Parameter = 6, /*!< Invalid parameter */
+};
+
+//! @brief Type for return codes.
+typedef uint32_t SDMReturnCode;
 
 //! @brief Opaque handle to an opened instance of the SDM.
 typedef struct _SDMOpaqueHandle * SDMHandle;
@@ -104,21 +108,24 @@ enum SDMFlags {
 /*!
  * @brief Transfer sizes for memory transfer callbacks.
  *
- * These enums are used with the SDMArmADICallbacks::readMemory() and SDMArmADICallbacks::writeMemory()
+ * These enums are used with the #SDMCallbacks::readMemory and #SDMCallbacks::writeMemory
  * callbacks.
  *
  * Note that not all MEM-APs support all transfer sizes. If a transfer with an unsupported size is
  * attempted, a SDM_Fail_Unsupported_Transfer_Size error will be returned.
  */
-typedef enum SDMMemorySize {
-    SDM_Memory8,    //!< Perform an 8-bit memory transfer.
-    SDM_Memory16,   //!< Perform a 16-bit memory transfer.
-    SDM_Memory32,   //!< Perform a 32-bit memory transfer.
-    SDM_Memory64,   //!< Perform a 64-bit memory transfer.
-} SDMMemorySize;
+enum SDMMemorySize {
+    SDM_Memory8 = 8,    //!< Perform an 8-bit memory transfer.
+    SDM_Memory16 = 16,  //!< Perform a 16-bit memory transfer.
+    SDM_Memory32 = 32,  //!< Perform a 32-bit memory transfer.
+    SDM_Memory64 = 64,  //!< Perform a 64-bit memory transfer.
+};
+
+//! @brief Memory size parameter type.
+typedef uint32_t SDMMemorySize;
 
 /*!
- * @brief Item details for SDMArmADICallbacks::selectItem() callback.
+ * @brief Item details for #SDMCallbacks::selectItem callback.
  *
  * The item info consists of a pair of strings. The first is a short name for the item. This will
  * appear in the list from which the user selects an item. When an item is selected, the long
@@ -133,12 +140,51 @@ enum {
     //! @brief Value indicating the default AP should be used.
     //!
     //! Passed for the _device_ parameter of AP and memmory access callbacks.
-    SDM_DefaultDevice = -1,
+    SDM_DefaultDevice = -1L,
 };
 
 // Forward declare.
-struct SDMArmADICallbacks;
 struct SDMNexus5001Callbacks;
+
+/*!
+ * @brief Arm ADI architecture-specific callbacks.
+ */
+typedef struct SDMArmADICallbacks {
+    //! @name Debug sequences
+    //@{
+    /*!
+     * @brief Invoke a CMSIS debug sequence by name.
+     */
+    SDMReturnCode (*invokeDebugSequence)(const char *name, const char *pname);
+    //@}
+
+    //! @name AP accesses
+    //!
+    //! The _device_ parameter indicates the address of the AP to access. It can also be set to
+    //! @ref SDM_DefaultDevice, and the debugger will use a default AP. For ADIv5 systems, the
+    //! AP address is an APSEL value in the range 0-255. For ADIv6 systems, the AP address is an
+    //! APB address whose width depends on the target implementation.
+    //@{
+    /*!
+     * @brief Read an AP register.
+     *
+     * @param[in] device Address of the AP or #SDM_DefaultDevice.
+     * @param[in] registerAddress
+     * @param[out] value
+     * @param[in] refcon
+     */
+    SDMReturnCode (*apRead)(uint64_t device, uint64_t registerAddress, uint32_t *value, void *refcon);
+    /*!
+     * @brief Write an AP register.
+     *
+     * @param[in] device Address of the AP or #SDM_DefaultDevice.
+     * @param[in] registerAddress
+     * @param[in] value
+     * @param[in] refcon
+     */
+    SDMReturnCode (*apWrite)(uint64_t device, uint64_t registerAddress, uint32_t value, void *refcon);
+    //@}
+} SDMArmADICallbacks;
 
 /*!
  * @brief Union to map callback structure for the specific debug architecture.
@@ -274,53 +320,16 @@ typedef struct SDMCallbacks {
 } SDMCallbacks;
 
 /*!
- * @brief Arm ADI architecture-specific callbacks.
- */
-typedef struct SDMArmADICallbacks {
-    //! @name Debug sequences
-    //@{
-    /*!
-     * @brief Invoke a CMSIS debug sequence by name.
-     */
-    SDMReturnCode (*invokeDebugSequence)(const char *name, const char *pname);
-    //@}
-
-    //! @name AP accesses
-    //!
-    //! The _device_ parameter indicates the address of the AP to access. It can also be set to
-    //! @ref SDM_DefaultDevice, and the debugger will use a default AP. For ADIv5 systems, the
-    //! AP address is an APSEL value in the range 0-255. For ADIv6 systems, the AP address is an
-    //! APB address whose width depends on the target implementation.
-    //@{
-    /*!
-     * @brief Read an AP register.
-     *
-     * @param[in] device Address of the AP or #SDM_DefaultDevice.
-     * @param[in] registerAddress
-     * @param[out] value
-     * @param[in] refcon
-     */
-    SDMReturnCode (*apRead)(uint64_t device, uint64_t registerAddress, uint32_t *value, void *refcon);
-    /*!
-     * @brief Write an AP register.
-     *
-     * @param[in] device Address of the AP or #SDM_DefaultDevice.
-     * @param[in] registerAddress
-     * @param[in] value
-     * @param[in] refcon
-     */
-    SDMReturnCode (*apWrite)(uint64_t device, uint64_t registerAddress, uint32_t value, void *refcon);
-    //@}
-} SDMArmADICallbacks;
-
-/*!
  * @brief Supported types of default devices.
  */
-typedef enum SDMDefaultDeviceType {
+enum SDMDefaultDeviceType {
     SDM_ArmADI_AP = 0,
     SDM_ArmADI_MEM_AP = 1,
     SDM_ArmADI_CoreSight_Component = 2,
-} SDMDefaultDeviceType;
+};
+
+//! @brief Type for default device type enum parameter.
+typedef uint32_t SDMDefaultDeviceType;
 
 /*!
  * @brief Information about the default device.
@@ -336,7 +345,7 @@ typedef struct SDMDefaultDeviceInfo {
 typedef struct SDMOpenParameters {
     uint32_t version; /*!< Client interface version, should be set to #SDM_CurrentVersion. */
     SDMDebugArchitecture debugArchitecture; /*!< Debug architecture for the target. */
-    SDMCallbacks *callbacks; /*!< Callback collection */
+    SDMCallbacks callbacks; /*!< Callback collection */
     void *refcon; /*!< Debugger-supplied value passed to each of the callbacks. */
     uint32_t flags; /*!< Flags passed to the SDM from the debugger. */
     const char *userSelectedFilePath; /*!< Path to file chosen by the user in connection config. Not valid if NULL. */
@@ -346,11 +355,14 @@ typedef struct SDMOpenParameters {
 /*!
  * @brief Possible execution contexts.
  */
-typedef enum SDMExecutionContext {
+enum SDMExecutionContext {
     SDM_Boot_ROM = 0,
     SDM_Boot_Loader = 1,
     SDM_Runtime = 2,
-} SDMExecutionContext;
+};
+
+//! @brief Type for exection context enum parameter.
+typedef uint32_t SDMExecutionContext;
 
 /*!
  * @brief Parameters passed by the debugger to the SDM_Authenticate() API.
@@ -374,9 +386,10 @@ extern "C" {
  * pDebugIf->callbacks->f_nSRSTStage2.
  *
  * @param[out] handle New handle to the SDM instance.
- * @param[in] params Connection details and callbacks.
+ * @param[in] params Connection details and callbacks. This pointer and all pointers within the
+ *     structure must remain valid until SDM_Close() is called.
  */
-SDM_EXTERN SDMReturnCode SDM_Open(SDMHandle *handle, SDMOpenParameters *params);
+SDM_EXTERN SDMReturnCode SDM_Open(SDMHandle *handle, const SDMOpenParameters *params);
 
 // SDM_EXTERN SDMReturnCode SDM_PreAuthentication(SDMHandle handle);
 
@@ -387,7 +400,8 @@ SDM_EXTERN SDMReturnCode SDM_Open(SDMHandle *handle, SDMOpenParameters *params);
  * in the SDM XML.
  *
  * @param[in] handle Handle to the SDM instance.
- * @param[in] params P
+ * @param[in] params Parameters for the authentication. The pointer only needs to be valid during
+ *      the call to this API.
  */
 SDM_EXTERN SDMReturnCode SDM_Authenticate(SDMHandle handle, const SDMAuthenticateParameters *params);
 
