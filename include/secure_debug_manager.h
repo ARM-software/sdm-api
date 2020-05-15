@@ -140,7 +140,7 @@ enum {
     //! @brief Value indicating the default AP should be used.
     //!
     //! Passed for the _device_ parameter of AP and memmory access callbacks.
-    SDM_DefaultDevice = -1L,
+    SDM_DefaultDevice = -1LL,
 };
 
 // Forward declare.
