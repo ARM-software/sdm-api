@@ -1,0 +1,7 @@
+<map id="SDMOpenParameters" name="SDMOpenParameters">
+<area shape="rect" id="node1" title="Parameters passed to SDM_Open() by the debugger." alt="" coords="100,273,251,300"/>
+<area shape="rect" id="node2" href="$struct_s_d_m_callbacks.html" title="Collection of common callback functions provided by the debugger." alt="" coords="40,184,151,211"/>
+<area shape="rect" id="node3" href="$group__secure__debug__manager.html#union_s_d_m_architecture_callbacks" title="Union to map callback structure for the specific debug architecture." alt="" coords="5,95,185,121"/>
+<area shape="rect" id="node4" href="$struct_s_d_m_arm_a_d_i_callbacks.html" title="Arm ADI architecture&#45;specific callbacks." alt="" coords="17,5,174,32"/>
+<area shape="rect" id="node5" href="$group__secure__debug__manager.html#struct_s_d_m_default_device_info" title="Information about the default device." alt="" coords="175,184,333,211"/>
+</map>

@@ -1,0 +1,4 @@
+<map id="SDMArchitectureCallbacks" name="SDMArchitectureCallbacks">
+<area shape="rect" id="node1" title="Union to map callback structure for the specific debug architecture." alt="" coords="5,95,185,121"/>
+<area shape="rect" id="node2" href="$struct_s_d_m_arm_a_d_i_callbacks.html" title="Arm ADI architecture&#45;specific callbacks." alt="" coords="17,5,174,32"/>
+</map>
