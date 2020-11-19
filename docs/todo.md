@@ -10,6 +10,8 @@ Secure Debug Manager API Todo
 
 - userSelectedFilePath and selectItem needs thought
     - flexible enough?
+    - can use a user-selected config file for more complex requirements?
+        - does this just move the burden?
 
 - selectItem partner feedback:
     Potentially the selectItem() api we understand that it allows to select one file.
@@ -27,4 +29,12 @@ Secure Debug Manager API Todo
 
 - Document manifest, including set of capabilities
 
+- SDM_Authenticate:
+    - deal with:
+        - reset type/exec context
+        - multiple auths
+
+- what params for auth API?
+
+- why was resetType removed from SDM_Open (vs SDM_Init)? what implications does this have?
 

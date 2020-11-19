@@ -40,12 +40,12 @@ provider and debug mailbox interface.
 ### Structure
 
 The main [`secure_debug_manager.h`](include/secure_debug_manager.h) header file is located in the
-[`include/`](include) directory.
+[`include/`](./include/) directory.
 
 A doxygen configuration file is available to generate documentation for the API.
 
 An XML manifest file will be included with the SDM shared library. The included
-[`xml/manifest.xml`](xml/manifest.xml) file is an example manifest for experimentation.
+[`xml/example-manifest.xml`](xml/example-manifest.xml) file is an example manifest for experimentation.
 
 The manifest serves several purposes:
 
@@ -60,13 +60,12 @@ Eventually a proper schema will be created for the manifest.
 The overall structure for the API is well defined; some details are very much in progress. All
 feedback is appreciated.
 
-Remaining tasks are collected in the [`todo.md`](todo.md) file.
+Remaining tasks are collected in the [`todo.md`](docs/todo.md) file.
 
 PSA ADAC related lower-level APIs are not yet defined.
 
 ### License
 
-The files are covered by the BSD 3-Clause license. However, this repository is currently considered
-confidential and is only accessible under NDA.
+The files are covered by the BSD 3-Clause license.
 
 Copyright © 2020 Arm Ltd.
