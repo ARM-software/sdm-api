@@ -67,10 +67,14 @@
 /*!
  * @brief API version number constants.
  *
- * These version numbers are used for #SDMOpenParameters::version.
+ * These version numbers are used for #SDMOpenParameters::version fields. A change of the major version is
+ * not backwards compatible with previous versions, whilst a minor version change is backwards compatible.
+ * Minor version increments may include new features, as long as those features are not required for
+ * proper functioning.
  */
 enum SDMVersion {
-    SDM_CurrentVersion = 1, /*!< Current API version. */
+    SDM_CurrentMajorVersion = 1, /*!< Current API major version. */
+    SDM_CurrentMinorVersion = 0, /*!< Current API minor version. */
 };
 
 /*!
@@ -346,7 +350,10 @@ typedef struct SDMDefaultDeviceInfo {
  * @brief Parameters passed to SDM_Open() by the debugger.
  */
 typedef struct SDMOpenParameters {
-    uint32_t version; /*!< Client interface version, should be set to #SDM_CurrentVersion. */
+    struct {
+        uint16_t major; /*!< Client interface major version. */
+        uint16_t minor; /*!< Client interface minor version. */
+    } version; /*!< Client interface version. @see #SDMVersion. */
     SDMDebugArchitecture debugArchitecture; /*!< Debug architecture for the target. */
     SDMCallbacks callbacks; /*!< Callback collection */
     void *refcon; /*!< Debugger-supplied value passed to each of the callbacks. */
