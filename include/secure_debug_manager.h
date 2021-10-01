@@ -155,6 +155,9 @@ struct SDMNexus5001Callbacks;
 
 /*!
  * @brief Arm ADI architecture-specific callbacks.
+ *
+ * For minor version API increments to remain backwards compatible, new callbacks must be added to the
+ * end of this struct.
  */
 typedef struct SDMArmADICallbacks {
     //! @name Debug sequences
@@ -213,6 +216,9 @@ typedef union SDMArchitectureCallbacks {
  *
  * All callbacks accept a _refcon_ parameter. The SDM _must_ pass the value of the
  * SDMOpenParameters::refcon field that was provided to SDMOpen().
+ *
+ * For minor version API increments to remain backwards compatible, new callbacks must be added to the
+ * end of this struct.
  */
 typedef struct SDMCallbacks {
     //! @brief Debug archicture-specific callbacks.
@@ -355,7 +361,7 @@ typedef struct SDMOpenParameters {
         uint16_t minor; /*!< Client interface minor version. */
     } version; /*!< Client interface version. @see #SDMVersion. */
     SDMDebugArchitecture debugArchitecture; /*!< Debug architecture for the target. */
-    SDMCallbacks callbacks; /*!< Callback collection */
+    SDMCallbacks *callbacks; /*!< Callback collection */
     void *refcon; /*!< Debugger-supplied value passed to each of the callbacks. */
     uint32_t flags; /*!< Flags passed to the SDM from the debugger. */
     const char *userSelectedFilePath; /*!< Path to file chosen by the user in connection config. Not valid if NULL. */
