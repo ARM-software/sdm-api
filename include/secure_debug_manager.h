@@ -411,18 +411,12 @@ SDM_EXTERN SDMReturnCode SDM_Authenticate(SDMHandle handle, const SDMAuthenticat
 /*!
  * @brief Called by the debugger to resume the boot of the remote platform.
  *
+ * This API is only a request from the host to the plugin. It may be implemented as a no-op.
+ *
  * It is typically called after the debugger places its breakpoints at the booting debugged system.
  * It is only useful if the debugged system supports the introduction of debug certificate in the
  * early boot stages, otherwise if the debugged system processes the secure debug certificate at runtime,
  * it does not wait for the resume command.
- *
- * The debugger can know this fact at the response of introduction of the secure debug certificate, which is
- * also the return value of {@link SDM_Open}. In case it happened at early boot then {@link SDM_Open} will
- * return SDM_SUCCESS_WAIT_RESUME. Otherwise if introduced at run time then {@link SDM_Open} will
- * return SDM_SUCCESS.
- *
- * In the 1st case, after the return of {@link SDM_Open} the user set breakpoints while the debugged system
- * is still waiting. After breakpoints are set, the debugger can call {@link SDM_ResumeBoot}
  *
  * @param[in] handle Handle to the SDM instance.
  */
