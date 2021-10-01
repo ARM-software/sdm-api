@@ -102,16 +102,6 @@ typedef enum SDMDebugArchitecture {
 } SDMDebugArchitecture;
 
 /*!
- * @brief Reset method to use.
- */
-typedef enum SDMResetType {
-    SDM_NoReset = 0, /*!< No reset*/
-//     SDM_COMPortReset = 1, /*!< SDC-600 External COM port remote reboot */
-    SDM_HardwareReset = 2, /*!< Full system reset via nSRST pin */
-    SDM_SoftwareReset = 3, /*!< Full system reset via software reset mechanism */
-} SDMResetType;
-
-/*!
  * @brief Flags for SDMOpenParameters.
  */
 enum SDMFlags {
