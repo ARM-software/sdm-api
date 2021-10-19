@@ -144,7 +144,7 @@ typedef struct SDMItemInfo {
     const char *itemLongDescription; /*!< Optional descriptive text for this item. Can be NULL. */
 } SDMItemInfo;
 
-enum _sdm_default_device {
+enum SDMDefaultDeviceEnum {
     //! @brief Value indicating the default AP should be used.
     //!
     //! Passed for the _device_ parameter of AP and memory access callbacks.
