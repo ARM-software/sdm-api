@@ -33,7 +33,7 @@
  * @brief Top-level API for secure debug library.
  *
  * The Secure Debug Manager API (SDM API) defines the interface used by debug clients, such as
- * debuggers, IDEs, and other tools, for performing protocol-independant secure debug
+ * debuggers, IDEs, and other tools, for performing protocol-independent secure debug
  * authentication.
  *
  * @{
@@ -147,7 +147,7 @@ typedef struct SDMItemInfo {
 enum _sdm_default_device {
     //! @brief Value indicating the default AP should be used.
     //!
-    //! Passed for the _device_ parameter of AP and memmory access callbacks.
+    //! Passed for the _device_ parameter of AP and memory access callbacks.
     SDM_DefaultDevice = -1LL,
 };
 
@@ -208,7 +208,7 @@ typedef union SDMArchitectureCallbacks {
 /*!
  * @brief Collection of common callback functions provided by the debugger.
  *
- * Debug archicture-specific callbacks are accessed through the architectureCallbacks member.
+ * Debug architecture-specific callbacks are accessed through the architectureCallbacks member.
  *
  * This interface is not designed for performance but for simplicity.
  *
@@ -222,7 +222,7 @@ typedef union SDMArchitectureCallbacks {
  * end of this struct.
  */
 typedef struct SDMCallbacks {
-    //! @brief Debug archicture-specific callbacks.
+    //! @brief Debug architecture-specific callbacks.
     SDMArchitectureCallbacks architectureCallbacks;
 
     //! @name User interaction
@@ -379,7 +379,7 @@ enum SDMExecutionContext {
     SDM_Runtime = 2,
 };
 
-//! @brief Type for exection context enum parameter.
+//! @brief Type for execution context enum parameter.
 typedef uint32_t SDMExecutionContext;
 
 /*!
