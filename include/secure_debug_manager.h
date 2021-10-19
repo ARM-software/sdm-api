@@ -143,7 +143,7 @@ typedef struct SDMItemInfo {
     const char *itemLongDescription; /*!< Optional descriptive text for this item. Can be NULL. */
 } SDMItemInfo;
 
-enum {
+enum _sdm_default_device {
     //! @brief Value indicating the default AP should be used.
     //!
     //! Passed for the _device_ parameter of AP and memmory access callbacks.
@@ -336,9 +336,10 @@ typedef struct SDMCallbacks {
  * @brief Supported types of default devices.
  */
 enum SDMDefaultDeviceType {
-    SDM_ArmADI_AP = 0,
-    SDM_ArmADI_MEM_AP = 1,
-    SDM_ArmADI_CoreSight_Component = 2,
+    SDM_NoDefaultDevice = 0,
+    SDM_ArmADI_AP = 1,
+    SDM_ArmADI_MEM_AP = 2,
+    SDM_ArmADI_CoreSight_Component = 3,
 };
 
 //! @brief Type for default device type enum parameter.
