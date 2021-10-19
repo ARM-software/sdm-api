@@ -151,6 +151,33 @@ enum SDMDefaultDeviceEnum {
     SDM_DefaultDevice = -1LL,
 };
 
+/*!
+ * @brief Arm ADI architecture-specific memory transfer attributes.
+ *
+ * These enumerators define bit masks for the memory transfer attributes that can be specified
+ * with a MEM-AP. Not all available memory attributes are provided.
+ */
+enum SDMArmADITransferAttributes {
+    //! @brief Abstracted nonsecure attribute.
+    //!
+    //! The debugger must translate this attribute to the appropriate HNONSEC (AHB) or AxPROT[1] (AXI).
+    SDM_ArmADI_Nonsecure_Attr = 0x0001,
+
+    //! @brief Abstracted non-privileged attribute.
+    //!
+    //! The debugger must translate this attribute to the appropriate HPROT[1] (AHB) or AxPROT[0] (AXI).
+    SDM_ArmADI_NonPrivileded_Attr = 0x0002,
+
+    //! @brief Flag indicating #SDM_ADI_Direct_Attr_Mask should be used.
+    SDM_ArmADI_Direct_Attr_Enable = 0x0080,
+
+    //! @brief Mask for passing direct memory transfer attributes.
+    //!
+    //! If #SDM_ADI_Direct_Attr_Enable is set, any bits within this mask are passed directly as the
+    //! MEM-AP CSW.PROT field.
+    SDM_ArmADI_Direct_Attr_Mask = 0x7F00,
+};
+
 // Forward declare.
 struct SDMNexus5001Callbacks;
 
@@ -274,62 +301,65 @@ typedef struct SDMCallbacks {
 
     //! @name Memory accesses
     //!
-    //! The _device_ parameter indicates the a debug-architecture-defined address fior the interface
-    //! to the memory system. It can also be set to #SDM_DefaultDevice, and the debugger will use a
-    //! default memory interface device. For the Arm ADI architecture, this is the address of the
-    //! MEM-AP to use.
+    //! The _device_ parameter indicates the a debug-architecture-defined address for the interface
+    //! to the memory system. For the Arm ADI architecture, this is the address of the MEM-AP to use.
+    //! It can also be set to #SDM_DefaultDevice, and the debugger will use the default memory interface
+    //! device identified in SDMOpenParmeters. If no default memory interface device is indicated, then
+    //! use of #SDM_DefaultDevice will return an error.
     //!
     //! The _address_ parameter is always the address to access within the memory space controlled
-    //! by the selected MEM-AP.
+    //! by the selected device (MEM-AP).
     //!
     //! Addresses must be aligned to transfer size.
     //@{
     /*!
-     * @brief Read one unit of memory.
+     * @brief Read target memory.
      *
      * @param[in] device Address of the MEM-AP or #SDM_DefaultDevice.
      * @param[in] address Memory address of the data to read.
      * @param[in] transferSize Enum indicating the requested size of the transfer unit.
-     * @param[out] value
+     * @param[in] transferCount Number of memory elements of size _transferSize_ to read.
+     * @param[in] attributes Debug-architecture-defined set of attributes that will apply to the transfer, such
+     *  as Non-secure, Privileged, Cacheable, and so on. For Arm ADI, this is a value produced by OR'ing
+     *  the enums defined in #_sdms_adi_transfer_attribute.
+     * @param[out] data Buffer where read data will be written. Must be at least _transferSize_ * _transferCount_
+     *  bytes in length.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
      * @retval SDM_Success The read completed successfully and _value_ holds the data.
      * @retval SDM_Fail_No_Response
      */
-    SDMReturnCode (*readMemory)(uint64_t device, uint64_t address, SDMMemorySize transferSize, void *value, void *refcon);
+    SDMReturnCode (*readMemory)(
+        uint64_t device,
+        uint64_t address,
+        SDMMemorySize transferSize,
+        size_t transferCount,
+        uint8_t attributes,
+        void *data,
+        void *refcon);
     /*!
-     * @brief Write one unit of memory.
+     * @brief Write target memory.
      *
      * @param[in] device Address of the MEM-AP or #SDM_DefaultDevice.
      * @param[in] address Memory address of the data to write.
      * @param[in] transferSize Enum indicating the requested size of the transfer unit.
-     * @param[in] value
+     * @param[in] transferCount Number of memory elements of size _transferSize_ to write.
+     * @param[in] attributes Debug-architecture-defined set of attributes that will apply to the transfer, such
+     *  as Non-secure, Privileged, Cacheable, and so on. For Arm ADI, this is a value produced by OR'ing
+     *  the enums defined in #_sdms_adi_transfer_attribute.
+     * @param[in] data Buffer from where data to be written is read. Must be at least _transferSize_ * _transferCount_
+     *  bytes in length.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
      */
-    SDMReturnCode (*writeMemory)(uint64_t device, uint64_t address, SDMMemorySize transferSize, const void *value, void *refcon);
-    /*!
-     * @brief Read a block of memory.
-     *
-     * @param[in] device Address of the MEM-AP or #SDM_DefaultDevice.
-     * @param[in] address
-     * @param[in] byteCount
-     * @param[out] data
-     * @param[in] refcon Must be set to the reference value provided by the debugger through
-     *  SDMOpenParameters::refcon.
-     */
-    SDMReturnCode (*readMemoryBulk)(uint64_t device, uint64_t address, uint32_t byteCount, uint8_t* data, void *refcon);
-    /*!
-     * @brief Write a block of memory.
-     *
-     * @param[in] device Address of the MEM-AP or #SDM_DefaultDevice.
-     * @param[in] address
-     * @param[in] byteCount
-     * @param[in] data
-     * @param[in] refcon Must be set to the reference value provided by the debugger through
-     *  SDMOpenParameters::refcon.
-     */
-    SDMReturnCode (*writeMemoryBulk)(uint64_t device, uint64_t address, uint32_t byteCount, const uint8_t *data, void *refcon);
+    SDMReturnCode (*writeMemory)(
+        uint64_t device,
+        uint64_t address,
+        SDMMemorySize transferSize,
+        size_t transferCount,
+        uint8_t attributes,
+        const void *value,
+        void *refcon);
     //@}
 } SDMCallbacks;
 
