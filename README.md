@@ -68,4 +68,4 @@ PSA ADAC related lower-level APIs are not yet defined.
 
 The files are covered by the BSD 3-Clause license.
 
-Copyright © 2020 Arm Ltd.
+Copyright © 2020-2021 Arm Ltd.
