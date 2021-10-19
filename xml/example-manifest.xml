@@ -3,6 +3,12 @@
 Manifest files will most-likely be SoC- or family-specific.
 -->
 <secure_debug_manager>
+  <!--  -->
+  <manifest-version>1.0</manifest-version>
+
+  <!--  -->
+  <api-version>1.0</api-version>
+
   <!--
     List of libraries to load
   -->
@@ -11,6 +17,7 @@ Manifest files will most-likely be SoC- or family-specific.
   <dep>lib2</dep>
   <dep>lib2</dep>
  -->
+
   <!--
     Functionality supported and/or required by the SDM implementation.
   -->
@@ -21,22 +28,37 @@ Manifest files will most-likely be SoC- or family-specific.
     <feature name="multiple-authentications" enable="true"/>
     <feature name="arm-debug-sequence" required="true"/> <!-- just an idea -->
   </capabilities>
+
   <!--
-    Information used by the debugger for discovering target details, including detecting the
+    Target debug mailbox specifications used by the debugger for discovering target details, including detecting the
     debugger mailbox. This would then be used as the default device for callbacks.
+
+    Multiple mailbox specifications may be listed. They are searched for in the order listed.
+    The first successful match becomes the default device for callbacks.
+
+    The plugin is not restricted to using debug mailboxes supported by this mechanism, but it
+    can make the plugin implementation simpler and more reusable if possible.
+
+    TODO: Is there other target information that could be placed here? Remember, the debugger already knows how
+    to communicate with the target device.
   -->
   <target>
-    <!-- Example: Arm SDC-600 -->
-    <mailbox apidr="0x04762000" info="SDC-600" id="1"/>
+    <coresight>
+        <!-- Example: Arm SDC-600 -->
+        <mailbox type="ap" idr="0x04762000" info="SDC-600" id="1"/>
 
-    <!-- Example: NXP's DM-AP -->
-    <mailbox apidr="0x002a0000" info="DM-AP" id="2"/>
+        <!-- Example: NXP's DM-AP -->
+        <mailbox type="ap" idr="0x002a0000" info="DM-AP" id="2"/>
 
-    <!-- Example: SiLab's mailbox APB-AP (finish) -->
-    <mailbox type="coresight" idr="0x54770002" index="3" info="DM-AP" id="3"/>
+        <!-- Example: SiLab's mailbox APB-AP (finish) -->
+        <mailbox type="coresight" idr="0x54770002" index="3" info="DM-AP" id="3"/>
 
-    <!-- todo: memory window -->
+        <!-- Example: memory window -->
+        <!-- TODO: How to handle ADIv6 nested APs? Separate AP definitions reference by <mailbox>? -->
+        <mailbox type="memory" apv2="0x8000" address="0x40003000" length="64"/>
+    </coresight>
   </target>
+
   <!--
     Options to show the user prior to performing an authentication.
   -->
@@ -48,6 +70,7 @@ Manifest files will most-likely be SoC- or family-specific.
       </extensions>
     </file_selection>
   </options>
+
   <!--
     Simple l10n support by matching static string values.
   -->
