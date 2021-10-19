@@ -51,6 +51,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef SKIP_FOR_DOXYGEN
 #ifdef _WIN32
@@ -386,7 +387,7 @@ typedef uint32_t SDMExecutionContext;
  */
 typedef struct SDMAuthenticateParameters {
     SDMExecutionContext expectedExecutionContext;
-    uint8_t isLastAuthentication;
+    bool isLastAuthentication;
 } SDMAuthenticateParameters;
 
 #ifdef __cplusplus
