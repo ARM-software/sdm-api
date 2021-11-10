@@ -65,6 +65,12 @@
 #endif
 #endif // SKIP_FOR_DOXYGEN
 
+// Note about API design:
+// In cases where a value in the API is an enum, a typedef'd uint32_t is used instead of an enum type,
+// with the enumerations serving only as named constants. The sizes of enums are variable and depend on
+// compiler settings, so using a uint32_t type ensures ABI compatibility regardless of the compiler and
+// its configuration.
+
 /*!
  * @brief API version number constants.
  *
@@ -73,7 +79,7 @@
  * Minor version increments may include new features, as long as those features are not required for
  * proper functioning.
  */
-enum SDMVersion {
+enum SDMVersionEnum {
     SDM_CurrentMajorVersion = 1, /*!< Current API major version. */
     SDM_CurrentMinorVersion = 0, /*!< Current API minor version. */
 };
@@ -81,7 +87,7 @@ enum SDMVersion {
 /*!
  * @brief Return codes for SDM APIs and callbacks.
  */
-enum SDMReturnCode {
+enum SDMReturnCodeEnum {
     SDM_Success = 0, /*!< Success, no error */
     SDM_Fail_No_Response = 1, /*!< No response, timeout */
     SDM_Fail_Unsupported_Transfer_Size = 2, /*!< MEM-AP does not support the requested transfer size. */
@@ -100,11 +106,14 @@ typedef struct _SDMOpaqueHandle * SDMHandle;
 /*!
  * @brief Possible debug architectures.
  */
-typedef enum SDMDebugArchitecture {
+enum SDMDebugArchitectureEnum {
     SDM_Arm_ADIv5 = 0,  //!< Arm ADIv5 debug architecture. Uses #SDMArmADICallbacks.
     SDM_Arm_ADIv6 = 1,  //!< Arm ADIv6 debug architecture. Uses #SDMArmADICallbacks.
     SDM_Nexus5001 = 2,  //!< Nexus 5001 (IEEE-ISTO 5001-2003) debug architecture. Uses #SDMNexus5001Callbacks.
-} SDMDebugArchitecture;
+};
+
+//! @brief Type for debug architectures.
+typedef uint32_t SDMDebugArchitecture;
 
 /*!
  * @brief Flags for SDMOpenParameters.
@@ -122,7 +131,7 @@ enum SDMFlags {
  * Note that not all MEM-APs support all transfer sizes. If a transfer with an unsupported size is
  * attempted, a SDM_Fail_Unsupported_Transfer_Size error will be returned.
  */
-enum SDMMemorySize {
+enum SDMMemorySizeEnum {
     SDM_Memory8 = 8,    //!< Perform an 8-bit memory transfer.
     SDM_Memory16 = 16,  //!< Perform a 16-bit memory transfer.
     SDM_Memory32 = 32,  //!< Perform a 32-bit memory transfer.
@@ -366,7 +375,7 @@ typedef struct SDMCallbacks {
 /*!
  * @brief Supported types of default devices.
  */
-enum SDMDefaultDeviceType {
+enum SDMDefaultDeviceTypeEnum {
     SDM_NoDefaultDevice = 0,
     SDM_ArmADI_AP = 1,
     SDM_ArmADI_MEM_AP = 2,
@@ -403,7 +412,7 @@ typedef struct SDMOpenParameters {
 /*!
  * @brief Possible execution contexts.
  */
-enum SDMExecutionContext {
+enum SDMExecutionContextEnum {
     SDM_Boot_ROM = 0,
     SDM_Boot_Loader = 1,
     SDM_Runtime = 2,
