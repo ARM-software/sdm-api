@@ -147,6 +147,8 @@ typedef uint32_t SDMMemorySize;
  * The item info consists of a pair of strings. The first is a short name for the item. This will
  * appear in the list from which the user selects an item. When an item is selected, the long
  * description should be shown to provide the user more information.
+ *
+ * Both the short name and long description are UTF-8 encoded.
  */
 typedef struct SDMItemInfo {
     const char *itemShortName; /*!< Item name that will appear in the list. Must not be NULL. */
@@ -202,7 +204,8 @@ typedef struct SDMArmADICallbacks {
     //! The _device_ parameter indicates the address of the AP to access. It can also be set to
     //! @ref SDM_DefaultDevice, and the debugger will use a default AP. For ADIv5 systems, the
     //! AP address is an APSEL value in the range 0-255. For ADIv6 systems, the AP address is an
-    //! APB address whose width depends on the target implementation.
+    //! APB address whose width depends on the target implementation. Nested ADIv6 APs are not
+    //! supported directly.
     //@{
     /*!
      * @brief Read an AP register.
@@ -309,7 +312,9 @@ typedef struct SDMCallbacks {
     //! use of #SDM_DefaultDevice will return an error.
     //!
     //! The _address_ parameter is always the address to access within the memory space controlled
-    //! by the selected device (MEM-AP).
+    //! by the selected device. For MEM-APs, this is obvious. When #SDM_DefaultDevice is used and the
+    //! default device type is #SDM_ArmADI_CoreSight_Component, then the _address_ parameter becomes an
+    //! offset relative to the base address of the CoreSight component's 4 kB memory region.
     //!
     //! Addresses must be aligned to transfer size.
     //@{
