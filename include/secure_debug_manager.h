@@ -197,14 +197,6 @@ struct SDMNexus5001Callbacks;
  * end of this struct.
  */
 typedef struct SDMArmADICallbacks {
-    //! @name Debug sequences
-    //@{
-    /*!
-     * @brief Invoke a CMSIS debug sequence by name.
-     */
-    SDMReturnCode (*invokeDebugSequence)(const char *name, const char *pname);
-    //@}
-
     //! @name AP accesses
     //!
     //! The _device_ parameter indicates the address of the AP to access. It can also be set to

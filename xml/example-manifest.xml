@@ -26,7 +26,6 @@ Manifest files will most-likely be SoC- or family-specific.
     <feature name="debug-architecture:adiv6" enable="true"/>
     <feature name="resume-boot" enable="true"/>
     <feature name="multiple-authentications" enable="true"/>
-    <feature name="arm-debug-sequence" required="true"/> <!-- just an idea -->
   </capabilities>
 
   <!--
