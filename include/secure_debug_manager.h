@@ -123,6 +123,30 @@ enum SDMFlags {
 };
 
 /*!
+ * @brief Supported reset types.
+ *
+ * The reset type is passed to the host in the `resetStart()` and `resetFinish()` callbacks.
+ */
+enum SDMResetTypeEnum {
+    //! @brief System reset using the SDM host's default reset method.
+    //!
+    //! Note that this may include a target-specific reset type that is not directly selectable with one of these
+    //! enumerators.
+    SDM_DefaultReset = 0,
+
+    //! @brief System reset via nSRST pin.
+    //!
+    //! If the target does not have hardware reset, this falls back to #SDM_DefaultReset.
+    SDM_HardwareReset = 1,
+
+    //! @brief System reset via software reset mechanism.
+    SDM_SoftwareReset = 2,
+};
+
+//! @brief Type for reset type.
+typedef uint32_t SDMResetType;
+
+/*!
  * @brief Transfer sizes for memory transfer callbacks.
  *
  * These enums are used with the #SDMCallbacks::readMemory and #SDMCallbacks::writeMemory
@@ -301,17 +325,21 @@ typedef struct SDMCallbacks {
     //! @name Target reset
     //@{
     /*!
-     * @brief Reset stage 1.
+     * @brief Reset assertion stage.
+     * @param[in] resetType One of the #SDMResetTypeEnum enumerators.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
      */
-    SDMReturnCode (*resetStart)(void *refcon);
+    SDMReturnCode (*resetStart)(SDMResetType resetType, void *refcon);
+
     /*!
-     * @brief Reset stage 2.
+     * @brief Reset deassertion stage.
+     * @param[in] resetType One of the #SDMResetTypeEnum enumerators. Must be the same value passed to
+     *  `resetStart()`.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
      */
-    SDMReturnCode (*resetFinish)(void *refcon);
+    SDMReturnCode (*resetFinish)(SDMResetType resetType, void *refcon);
     //@}
 
     //! @name Memory accesses
@@ -354,6 +382,7 @@ typedef struct SDMCallbacks {
         uint32_t attributes,
         void *data,
         void *refcon);
+
     /*!
      * @brief Write target memory.
      *
