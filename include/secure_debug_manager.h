@@ -80,8 +80,8 @@
  * proper functioning.
  */
 enum SDMVersionEnum {
-    SDM_CurrentMajorVersion = 1, /*!< Current API major version. */
-    SDM_CurrentMinorVersion = 0, /*!< Current API minor version. */
+    SDM_CurrentMajorVersion = 0, /*!< Current API major version. */
+    SDM_CurrentMinorVersion = 1, /*!< Current API minor version. */
 };
 
 /*!
