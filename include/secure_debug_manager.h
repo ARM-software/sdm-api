@@ -95,6 +95,7 @@ enum SDMReturnCodeEnum {
     SDM_Fail_IO = 4, /*!< Failed to transmit/receive data to/from the device */
     SDM_Fail_Internal = 5, /*!< An unspecified internal error occurred */
     SDM_Fail_Parameter = 6, /*!< Invalid parameter */
+    SDM_Fail_UserCancelled = 7, /*!< User canceled the operation */
 };
 
 //! @brief Type for return codes.
@@ -154,6 +155,26 @@ typedef struct SDMItemInfo {
     const char *itemShortName; /*!< Item name that will appear in the list. Must not be NULL. */
     const char *itemLongDescription; /*!< Optional descriptive text for this item. Can be NULL. */
 } SDMItemInfo;
+
+/*!
+ * @brief Flags for SDMTextFieldInfo.
+ */
+enum SDMTextFieldFlags {
+    //! @brief The field is for entering a password and entered text should be bulleted.
+    SDM_IsPasswordField = (1 << 0),
+    //! @brief User is allowed to leave the field blank.
+    SDM_IsOptionalField = (1 << 1),
+};
+
+/*!
+ * @brief Item details for #SDMCallbacks::enterText callback.
+ */
+struct SDMTextFieldInfo {
+    const char * title; //!< Title for the text field. UTF-8 encoded. Must not be NULL.
+    uint32_t flags;     //!< Mask composed of enums from SDMTextFieldFlags.
+    char *buffer;       //!< Buffer into which the entered text will be stored as a null-terminated UTF-8 encoded string. Must not be NULL.
+    uint32_t bufferLength;  //!< Size in bytes of the buffer pointed to by @a buffer. The maximum entered text length will not be greated that this value - 1 (for the terminating null). Must be greater than 0.
+}
 
 enum SDMDefaultDeviceEnum {
     //! @brief Value indicating the default AP should be used.
@@ -256,7 +277,7 @@ typedef struct SDMCallbacks {
     //! @brief Debug architecture-specific callbacks.
     SDMArchitectureCallbacks architectureCallbacks;
 
-    //! @name User interaction
+    //! @name Progress
     //@{
     /*!
      * @brief Inform the debugger of the current authentication progress.
@@ -270,21 +291,6 @@ typedef struct SDMCallbacks {
      *  SDMOpenParameters::refcon.
      */
     void (*updateProgress)(const char *progressMessage, uint8_t percentComplete, void *refcon);
-
-    /*!
-     * @brief Ask the user to choose an item from the list.
-     *
-     * The intended use is to allow the user to select a credential or other configuration item
-     * from the provided list.
-     *
-     * @param[in] title
-     * @param[in] count
-     * @param[in] items
-     * @param[in] refcon Must be set to the reference value provided by the debugger through
-     *  SDMOpenParameters::refcon.
-     * @return The index of the item the user selected, or -1 if the user cancelled.
-     */
-    int32_t (*selectItem)(const char *title, uint32_t count, const SDMItemInfo *items, void *refcon);
     //@}
 
     //! @name Target reset
@@ -367,6 +373,43 @@ typedef struct SDMCallbacks {
         const void *value,
         void *refcon);
     //@}
+
+    //! @name User interaction
+    //@{
+    /*!
+     * @brief Ask the user to choose an item from the list.
+     *
+     * The intended use is to allow the user to select a credential or other configuration item
+     * from the provided list.
+     *
+     * @param[in] title
+     * @param[in] count
+     * @param[in] items
+     * @param[in] refcon Must be set to the reference value provided by the debugger through
+     *  SDMOpenParameters::refcon.
+     * @return The index of the item the user selected, or -1 if the user cancelled.
+     */
+    int32_t (*selectItem)(const char *title, uint32_t count, const SDMItemInfo *items, void *refcon);
+
+    /*!
+     * @brief Ask the user to enter text in one or more fields.
+     *
+     * The intended use is to allow the user to enter a password, account credentials, or similar
+     * information required to unlock device access.
+     *
+     * The user is presented with the fields described by the _fields_ argument, and has the choice
+     * to continue (after filled required fields)
+     *
+     * @param[in] fields Array of descriptors for the text fields to present.
+     * @param[in] count Number of elements of _fields_.
+     * @param[in] refcon Must be set to the reference value provided by the debugger through
+     *  SDMOpenParameters::refcon.
+     * @retval #SDM_Success User filled the fields.
+     * @retval #SDM_Fail_UserCancelled User cancelled the operation.
+     */
+    SDMReturnCode (*enterText)(const SDMTextFieldInfo *fields, uint32_t count, void *refcon);
+    //@}
+
 } SDMCallbacks;
 
 /*!
