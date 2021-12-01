@@ -95,6 +95,7 @@ enum SDMReturnCodeEnum {
     SDM_Fail_IO = 4, /*!< Failed to transmit/receive data to/from the device */
     SDM_Fail_Internal = 5, /*!< An unspecified internal error occurred */
     SDM_Fail_Parameter = 6, /*!< Invalid parameter */
+    SDM_Fail_UserCancelled = 7, /*!< User canceled the operation */
 };
 
 //! @brief Type for return codes.
@@ -166,7 +167,7 @@ enum SDMMemorySizeEnum {
 typedef uint32_t SDMMemorySize;
 
 /*!
- * @brief Item details for #SDMCallbacks::selectItem callback.
+ * @brief Item details for #SDM_ItemSelect form element.
  *
  * The item info consists of a pair of strings. The first is a short name for the item. This will
  * appear in the list from which the user selects an item. When an item is selected, the long
@@ -175,9 +176,158 @@ typedef uint32_t SDMMemorySize;
  * Both the short name and long description are UTF-8 encoded.
  */
 typedef struct SDMItemInfo {
-    const char *itemShortName; /*!< Item name that will appear in the list. Must not be NULL. */
-    const char *itemLongDescription; /*!< Optional descriptive text for this item. Can be NULL. */
+    const char *itemShortName;          //!< Item name that will appear in the list. Must not be NULL.
+    const char *itemLongDescription;    //!< Optional descriptive text for this item. Can be NULL.
 } SDMItemInfo;
+
+/*!
+ * @brief Control state values.
+ */
+enum SDMControlStateEnum {
+    SDM_ControlActiveState = 0,     //!< The control is activated. For a checkbox, this means checked.
+    SDM_ControlInactiveState = 1,   //!< The control is inactivated. For a checkbox, this means unchecked.
+    SDM_ControlMixedState = 2       //!< The control has a mixed state. For a checkbox, this is the '-' state.
+};
+
+//! @brief Control state type.
+typedef uint32_t SDMControlState;
+
+/*!
+ * @brief Types of user input form elements.
+ */
+enum SDMFormElementTypeEnum {
+    SDM_StaticText = 0,     //!< Static text element.
+    SDM_TextField = 1,      //!< Text input field.
+    SDM_Checkbox = 2,       //!< Single checkbox.
+    SDM_FileSelect = 3,     //!< File path field/selector.
+    SDM_ItemSelect = 4,     //!< One of many item select. For instance, a pop-up menu or scrolling list.
+};
+
+//! @brief Form element type.
+typedef uint32_t SDMFormElementType;
+
+/*!
+ * @brief Flags for user input form elements.
+ *
+ * Not all flags apply to every form element type.
+ */
+enum SDMFormElementFlagsEnum {
+    SDM_ElementIsOptional = (1 << 0),   //!< The element does not have to be filled/set.
+    SDM_ElementIsDisabled = (1 << 1),   //!< The element is disabled.
+    SDM_ElementIsHidden = (1 << 2),     //!< The element should not be displayed.
+    SDM_ElementIsCacheable = (1 << 3),  //!< The element's value may be cached for redisplay.
+    SDM_TextFieldIsPassword = (1 << 8), //!< Text field is for entering a password; entered text should be bulleted.
+    SDM_CheckboxIsTristate = (1 << 12), //!< Checkbox must support the mixed state value.
+    SDM_PathSelectIsFolder = (1 << 16), //!< File select will require user to select folder instead of file.
+};
+
+/*!
+ * @brief Item details for #SDMCallbacks::enterText callback.
+ *
+ * All strings must be UTF-8 encoded and null-terminated.
+ */
+typedef struct SDMFormElement {
+    const char *id;     //!< Unique element ID string used for automation-supplied input. Must be a valid C identifier.
+    const char *title;  //!< Element's title. Must not be NULL.
+    const char *help;   //!< Additional help for the element. May be presented, for example, as a tool tip. May be NULL.
+    SDMFormElementType fieldType;   //!< The type of this element.
+    uint32_t flags;     //!< Mask composed of #SDMFormElementFlagsEnum enums.
+    union {
+        /*!
+         * @brief Static text element descriptor.
+         */
+        struct {
+            //! The static text string value. Must not be NULL.
+            const char *text;
+        } staticText;
+
+        /*!
+         * @brief Text field element descriptor.
+         */
+        struct SDMTextFieldInfo {
+            //! On input: containts the initial value for the text field.</br>
+            //! On output: Buffer into which the entered text will be stored as a null-terminated UTF-8
+            //! encoded string.
+            //!
+            //! Must not be NULL.
+            char *textBuffer;
+
+            //! Size in bytes of the buffer pointed to by `textBuffer`. The maximum entered text length will not be
+            //! greater than this value - 1 (to accomodate the terminating null). Must be greater than 0.
+            uint32_t textBufferLength;
+        } textField;
+
+        /*!
+         * @brief Checkbox element descriptor.
+         */
+        struct SDMCheckboxInfo {
+            //! On input: Initial checkbox state.</br>
+            //! On output: Output checkbox state.
+            //!
+            //! Must not be NULL.
+            SDMControlState *state;
+        } checkbox;
+
+        /*!
+         * @brief Path select element descriptor.
+         *
+         * By default a file is selected. If a folder is required, the #SDM_PathSelectIsFolder flag can be set.
+         */
+        struct SDMPathSelectInfo {
+            //! Array of filename extensions to allow. May be NULL, in which case any file
+            //! can be selected. Not used if #SDM_PathSelectIsFolder is set.
+            const char **extensions;
+
+            //! Number of entries in the filename extensions array. Not used if #SDM_PathSelectIsFolder is set.
+            uint32_t extensionsCount;
+
+            //! Buffer for selected file path.
+            //!
+            //! On input: Initial UTF-8 encoded path value.</br>
+            //! On output: Filled with the selected null-terminated UTF-8 encoded path on success.
+            //!
+            //! Must not be NULL.
+            char *pathBuffer;
+
+            //! Size in bytes of the buffer pointed to by `pathBuffer`. The maximum entered text length will not be
+            //! greater than this value - 1 (for the terminating null). Must be greater than 0.
+            uint32_t pathBufferLength;
+        } pathSelect;
+
+        /*!
+         * @brief Item select element descriptor.
+         *
+         * The `selectionIndex` field is base 0. A value of -1 is used to indicate "no selection"".
+         */
+        struct SDMItemSelectInfo {
+            //! Pointer to array of item descriptors. Must not be NULL.
+            const SDMItemInfo *items;
+
+            //! Number of elements of the @a items array.
+            uint32_t itemCount;
+
+            //! On input: Initial selected item.</br>
+            //! On output: Set to the index of the selected item.
+            //! Must not be NULL.
+            int32_t *selectionIndex;
+        } itemSelect;
+    };
+} SDMFormElement;
+
+/*!
+ * @brief Descriptor for a form.
+ *
+ * A form consists of
+ */
+typedef struct SDMForm {
+    const char *id;         //!< Unique form ID string used for automation-supplied input. Must be a valid C identifier.
+    const char *title;      //!< Title of the form. Must not be NULL.
+    const char *info;       //!< Optional additional description of the form. May be NULL.
+    uint32_t flags;         //!< Mask for flags that apply to the entire form. Reserved for future use.
+    const SDMFormElement **elements; //!< Pointer to the array of element pointers.
+    uint32_t elementCount;  //!< Number of element pointers.
+} SDMForm;
+
 
 enum SDMDefaultDeviceEnum {
     //! @brief Value indicating the default AP should be used.
@@ -277,7 +427,7 @@ typedef struct SDMCallbacks {
     //! @brief Debug architecture-specific callbacks.
     SDMArchitectureCallbacks architectureCallbacks;
 
-    //! @name User interaction
+    //! @name Progress
     //@{
     /*!
      * @brief Inform the debugger of the current authentication progress.
@@ -305,21 +455,6 @@ typedef struct SDMCallbacks {
      * @param[in] errorDetails Detailed description of the error. May be NULL.
      */
     void (*setErrorMessage)(const char *errorMessage, const char *errorDetails);
-
-    /*!
-     * @brief Ask the user to choose an item from the list.
-     *
-     * The intended use is to allow the user to select a credential or other configuration item
-     * from the provided list.
-     *
-     * @param[in] title
-     * @param[in] count
-     * @param[in] items
-     * @param[in] refcon Must be set to the reference value provided by the debugger through
-     *  SDMOpenParameters::refcon.
-     * @return The index of the item the user selected, or -1 if the user cancelled.
-     */
-    int32_t (*selectItem)(const char *title, uint32_t count, const SDMItemInfo *items, void *refcon);
     //@}
 
     //! @name Target reset
@@ -407,6 +542,26 @@ typedef struct SDMCallbacks {
         const void *value,
         void *refcon);
     //@}
+
+    //! @name User interaction
+    //@{
+    /*!
+     * @brief Present a form to receive input from the user.
+     *
+     * The intended use cases include selecting a credential or other configuration item, enter username
+     * and/or password, select files, set requested permissions, and so on.
+     *
+     * @param[in] form Pointer to the form descriptor struct.
+     * @param[in] refcon Must be set to the reference value provided by the debugger through
+     *  SDMOpenParameters::refcon.
+     *
+     * @retval SDM_Success User provided requested input.
+     * @retval SDM_Fail_Parameter There was an issue with the form descriptors.
+     * @retval SDM_Fail_UserCancelled The user cancelled.
+     */
+    SDMReturnCode (*presentForm)(const SDMForm *form, void *refcon);
+    //@}
+
 } SDMCallbacks;
 
 /*!
@@ -442,7 +597,6 @@ typedef struct SDMOpenParameters {
     SDMCallbacks *callbacks; /*!< Callback collection */
     void *refcon; /*!< Debugger-supplied value passed to each of the callbacks. */
     uint32_t flags; /*!< Flags passed to the SDM from the debugger. */
-    const char *userSelectedFilePath; /*!< Path to file chosen by the user in connection config. Not valid if NULL. */
     SDMDefaultDeviceInfo defaultDeviceInfo; /*!< Information about the default device. */
 } SDMOpenParameters;
 
