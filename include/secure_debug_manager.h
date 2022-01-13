@@ -243,9 +243,6 @@ typedef union SDMArchitectureCallbacks {
  *
  * This interface is not designed for performance but for simplicity.
  *
- * Only bulk 8-bit r/w callbacks are provided to keep the set of callbacks simple. The implementation
- * must guarantee that aligned/sized transfers. [TODO]
- *
  * All callbacks accept a _refcon_ parameter. The SDM _must_ pass the value of the
  * SDMOpenParameters::refcon field that was provided to SDMOpen().
  *
@@ -431,21 +428,14 @@ extern "C" {
 #endif
 
 /*!
- * @brief This function is called by the debugger to start a secure debug session with the remote platform
- *
- * The caller is expected to set the resetType to a value other than link SDM_none when
- * it knows that the debugged platform implements the secure debug certificate processing in its ROM.
- * In the case of SDM_nSRSTReset, if the External COM port driver implementation does not have
- * nSRST capability the caller can provide callbacks pDebugIf->callbacks->f_nSRSTStage1 and
- * pDebugIf->callbacks->f_nSRSTStage2.
+ * @brief This function is called by the debugger to start a secure debug session with the remote platform.
  *
  * @param[out] handle New handle to the SDM instance.
  * @param[in] params Connection details and callbacks. This pointer and all pointers within the
- *     structure must remain valid until SDM_Close() is called.
+ *  structure will remain valid until SDM_Close() is called, so the plugin can cache the value for later
+ *  use.
  */
 SDM_EXTERN SDMReturnCode SDM_Open(SDMHandle *handle, const SDMOpenParameters *params);
-
-// SDM_EXTERN SDMReturnCode SDM_PreAuthentication(SDMHandle handle);
 
 /*!
  * @brief Perform authentication to unlock debug access.
