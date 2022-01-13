@@ -324,7 +324,7 @@ typedef struct SDMCallbacks {
      * @param[in] transferCount Number of memory elements of size _transferSize_ to read.
      * @param[in] attributes Debug-architecture-defined set of attributes that will apply to the transfer, such
      *  as Non-secure, Privileged, Cacheable, and so on. For Arm ADI, this is a value produced by OR'ing
-     *  the enums defined in #_sdms_adi_transfer_attribute.
+     *  the enums defined in #SDMArmADITransferAttributes.
      * @param[out] data Buffer where read data will be written. Must be at least _transferSize_ * _transferCount_
      *  bytes in length.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
@@ -337,7 +337,7 @@ typedef struct SDMCallbacks {
         uint64_t address,
         SDMMemorySize transferSize,
         size_t transferCount,
-        uint8_t attributes,
+        uint32_t attributes,
         void *data,
         void *refcon);
     /*!
@@ -349,7 +349,7 @@ typedef struct SDMCallbacks {
      * @param[in] transferCount Number of memory elements of size _transferSize_ to write.
      * @param[in] attributes Debug-architecture-defined set of attributes that will apply to the transfer, such
      *  as Non-secure, Privileged, Cacheable, and so on. For Arm ADI, this is a value produced by OR'ing
-     *  the enums defined in #_sdms_adi_transfer_attribute.
+     *  the enums defined in #SDMArmADITransferAttributes.
      * @param[in] data Buffer from where data to be written is read. Must be at least _transferSize_ * _transferCount_
      *  bytes in length.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
@@ -360,7 +360,7 @@ typedef struct SDMCallbacks {
         uint64_t address,
         SDMMemorySize transferSize,
         size_t transferCount,
-        uint8_t attributes,
+        uint32_t attributes,
         const void *value,
         void *refcon);
     //@}
