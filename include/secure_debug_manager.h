@@ -597,6 +597,7 @@ typedef struct SDMOpenParameters {
     SDMCallbacks *callbacks; /*!< Callback collection */
     void *refcon; /*!< Debugger-supplied value passed to each of the callbacks. */
     uint32_t flags; /*!< Flags passed to the SDM from the debugger. */
+    const char **locales; /*!< Pointer to a NULL-terminated array of IETF BCP 47 language tags, e.g. "en-US", "fr-FR", "sv", etc. The  tags are sorted in decreasing priority order. */
     SDMDefaultDeviceInfo defaultDeviceInfo; /*!< Information about the default device. */
 } SDMOpenParameters;
 
