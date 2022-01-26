@@ -628,6 +628,29 @@ typedef struct SDMDefaultDeviceInfo {
 } SDMDefaultDeviceInfo;
 
 /*!
+ * @brief Debugger connection modes.
+ */
+enum SDMConnectModeEnum {
+    //! @brief Connect in order to load application into memory before running.
+    //!
+    //! When the SDM authenticates, the application that will be debugged has not yet been loaded.
+    SDM_ConnectLoad = 0,
+
+    //! @brief Connect and reset to run previously loaded application.
+    //!
+    //! When the SDM authenticates, the application that will be debugged has already been loaded.
+    SDM_ConnectRestart = 1,
+
+    //! @brief Attach to running application.
+    //!
+    //! The SDM should not reset the target.
+    SDM_ConnectAttach = 2,
+};
+
+//! @brief Type for default device type enum parameter.
+typedef uint32_t SDMConnectMode;
+
+/*!
  * @brief Parameters passed to SDM_Open() by the debugger.
  */
 typedef struct SDMOpenParameters {
@@ -641,26 +664,14 @@ typedef struct SDMOpenParameters {
     uint32_t flags; /*!< Flags passed to the SDM from the debugger. */
     const char **locales; /*!< Pointer to a NULL-terminated array of IETF BCP 47 language tags, e.g. "en-US", "fr-FR", "sv", etc. The  tags are sorted in decreasing priority order. */
     SDMDefaultDeviceInfo defaultDeviceInfo; /*!< Information about the default device. */
+    SDMConnectMode connectMode; /*!< Debugger connect mode. */
 } SDMOpenParameters;
-
-/*!
- * @brief Possible execution contexts.
- */
-enum SDMExecutionContextEnum {
-    SDM_Boot_ROM = 0,
-    SDM_Boot_Loader = 1,
-    SDM_Runtime = 2,
-};
-
-//! @brief Type for execution context enum parameter.
-typedef uint32_t SDMExecutionContext;
 
 /*!
  * @brief Parameters passed by the debugger to the SDM_Authenticate() API.
  */
 typedef struct SDMAuthenticateParameters {
-    SDMExecutionContext expectedExecutionContext;
-    bool isLastAuthentication;
+    bool isLastAuthentication; //!< False if at least one subsequent call to SDM_Authenticate() is expected.
 } SDMAuthenticateParameters;
 
 #ifdef __cplusplus
