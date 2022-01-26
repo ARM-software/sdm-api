@@ -261,12 +261,26 @@ typedef struct SDMCallbacks {
      * This callback should only be invoked during a call to the SDM_Authenticate() API. Otherwise
      * calls will be ignored.
      *
+     * Host support for reporting progress is optional.
+     *
      * @param progressMessage
      * @param percentComplete
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
      */
     void (*updateProgress)(const char *progressMessage, uint8_t percentComplete, void *refcon);
+
+    /*!
+     * @brief Provide an error message for a failure.
+     *
+     * This callback is intended to be called just prior to returning an error status code from one of the
+     * SDM plugin's entry points. Exactly when, how, and even if the error message is presented to the user
+     * is the responsibility of the host. Host support for the @a errorDetails string is optional.
+     *
+     * @param[in] errorMessage The text of the error message. Must not be NULL.
+     * @param[in] errorDetails Detailed description of the error. May be NULL.
+     */
+    void (*setErrorMessage)(const char *errorMessage, const char *errorDetails);
 
     /*!
      * @brief Ask the user to choose an item from the list.
