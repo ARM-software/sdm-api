@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+SDM manifest files will most-likely be SoC- or family-specific.
+-->
+<manifest version="1.0">
+
+  <!-- Version of SDM API supported by the SDM plugin. -->
+  <api version="1.0"/>
+
+  <!--
+    List of libraries to load
+
+    The first library *must* be the SDM itself.
+
+    All paths must be relative to the manifest file, and in the same directory or a subdirectory. Using
+    '..' to move up directories is disallowed.
+  -->
+  <libraries os="macos" arch="universal">
+    <lib path="mac_universal/psa_sdm.dylib"/>
+    <lib path="mac_universal/sdc600.dylib"/>
+  </libraries>
+
+  <libraries os="windows" arch="x86_64">
+    <lib path="win_x86_64/psa_sdm.dll"/>
+    <lib path="win_x86_64/sdc600.dll"/>
+  </libraries>
+
+  <libraries os="linux" arch="aarch64">
+    <lib path="linux_aarch64/libpsa_sdm.so"/>
+    <lib path="linux_aarch64/libsdc600.so"/>
+  </libraries>
+
+  <!--
+    Functionality supported and/or required by the SDM implementation.
+    Value attribute is optional; whether it is required is determined by the feature definition.
+    Default for 'enable' is "true". If a feature is *not* listed, its 'enable' is "false".
+  -->
+  <capabilities>
+    <feature name="debug-architecture:adiv5" enable="true" value="foo"/>
+    <feature name="debug-architecture:adiv6"/>
+    <feature name="resume-boot" enable="true"/>
+    <feature name="multiple-authentications" enable="false"/>
+  </capabilities>
+
+  <!--
+    Optional list of additional resources.
+
+    All paths must be relative to the manifest file, and in the same directory or a subdirectory. Using
+    '..' to move up directories is disallowed.
+
+    Currently used only to associate files with the SDM plugin. When the plugin is executed at runtime,
+    these resources are guaranteed to be available at the same relative path to the manifest.
+
+    In the future this section might be used, for example, to provide an icon and company logo image,
+    help text, and so on.
+  -->
+  <resources>
+    <resource path="l10n/fr.po" info="French localisations"/>
+    <resource path="l10n/sv.po" info="Swedish localisations"/>
+    <resource type="logo" path="images/vendor_logo.svg" info="our logo"/>
+  </resources>
+
+  <!--
+    Optional configuration values for the SDM plugin.
+    The values are free-form and may contain arbitrary XML elements and text.
+  -->
+  <config>
+    <setting name="foo">bar</setting>
+  </config>
+
+</manifest>

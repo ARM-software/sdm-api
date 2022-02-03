@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    elementFormDefault="qualified"
+    attributeFormDefault="qualified"
+    version="1.0.0">
+
+<!-- version -->
+<xs:complexType name="version">
+  <xs:attribute name="version" type="semantic_version" use="required"/>
+</xs:complexType>
+
+<!-- semantic version: major.minor[.patch] -->
+<xs:simpleType name="semantic_version">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[0-9]+\.[0-9]+((\.[0-9]+)|())" />
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- libraries -->
+<xs:complexType name="libraries">
+  <xs:sequence>
+      <xs:element name="lib" type="lib" minOccurs="1" maxOccurs="unbounded"/>
+  </xs:sequence>
+  <!-- Valid OS names are defined elsewhere. -->
+  <xs:attribute name="os" type="xs:string" use="required"/>
+  <!-- Valid arch names are defined elsewhere. -->
+  <xs:attribute name="arch" type="xs:string" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="lib">
+  <!--
+  Library paths must be relative to the manifest file, and in the same directory or a subdirectory.
+  Using '..' to move up directories is disallowed.
+  -->
+  <xs:attribute name="path" type="xs:string" use="required"/>
+</xs:complexType>
+
+<!-- capabilities -->
+<xs:complexType name="capabilities">
+  <xs:sequence>
+      <xs:element name="feature" type="feature" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="feature">
+  <!-- Valid feature names are defined elsewhere. -->
+  <xs:attribute name="name" type="xs:string" use="required"/>
+  <!-- Optional enable, defaults to true. -->
+  <xs:attribute name="enable" type="bool_enum"/>
+  <!-- Optional value, used on a per-feature basis. -->
+  <xs:attribute name="value" type="xs:string"/>
+</xs:complexType>
+
+<xs:simpleType name="bool_enum">
+    <xs:restriction base="xs:string">
+         <xs:enumeration value="false"/>
+         <xs:enumeration value="true"/>
+    </xs:restriction>
+</xs:simpleType>
+
+<!-- resources -->
+<xs:complexType name="resources">
+  <xs:sequence>
+    <xs:element name="resource" minOccurs="0" maxOccurs="unbounded">
+      <xs:complexType>
+        <!-- Optional resource type name intended for future use. -->
+        <xs:attribute name="type" type="xs:string"/>
+        <!--
+        Resource paths must be relative to the manifest file, and in the same directory or a subdirectory.
+        Using '..' to move up directories is disallowed.
+        -->
+        <xs:attribute name="path" type="xs:string" use="required"/>
+        <!-- Descriptive help string. -->
+        <xs:attribute name="info" type="xs:string"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:sequence>
+</xs:complexType>
+
+<!-- config -->
+<xs:complexType name="config">
+  <xs:sequence>
+    <xs:element name="setting" type="setting" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+<!-- Config settings have a value composed of any text and/or arbitrary XML elements. -->
+<xs:complexType name="setting" mixed="true">
+  <xs:sequence>
+    <xs:any minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="xs:string"/>
+</xs:complexType>
+
+<!-- root element -->
+<xs:element name="manifest">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element name="api" type="version"/>
+      <xs:element name="libraries" type="libraries" maxOccurs="unbounded"/>
+      <xs:element name="capabilities" type="capabilities" minOccurs="0"/>
+      <xs:element name="resources" type="resources" minOccurs="0"/>
+      <xs:element name="config" type="config" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="version" type="semantic_version" use="required"/>
+  </xs:complexType>
+</xs:element>
+
+</xs:schema>
