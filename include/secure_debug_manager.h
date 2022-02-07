@@ -193,38 +193,80 @@ enum SDMArmADITransferAttributes {
 struct SDMNexus5001Callbacks;
 
 /*!
+ * @brief Regsiter access operation enum.
+ *
+ * These enums are used to specify the operation type of an individual #SDMRegisterAccess.
+ */
+enum SDMRegisterAccessOpEnum {
+    //! @brief Register read.
+    SDM_RegisterAccess_Read = 1,
+
+    //! @brief Register write.
+    SDM_RegisterAccess_Write = 2,
+
+    //! @brief Register poll.
+    //!
+    //! Repeatedly read register until an expected value or retry limit reached.
+    SDM_RegisterAccess_Poll = 3,
+};
+
+//! @brief Type for register access operation.
+typedef uint32_t SDMRegisterAccessOp;
+
+/*!
+ * @brief Details for individual register access.
+ */
+typedef struct SDMRegisterAccess {
+    //!< Register offset address.
+    uint32_t registerOffset;
+
+    //!< Register access operation.
+    SDMRegisterAccessOp op;
+
+    //!< Register vaalue.
+    //!< For #SDM_RegisterAccess_Read, [out] read value.
+    //!< For #SDM_RegisterAccess_Write, [in] write value.
+    //!< For #SDM_RegisterAccess_Poll, [in] poll match value.
+    uint32_t *regValue;
+
+    //!< Poll mask to match regValue. Only valid for #SDM_RegisterAccess_Poll.
+    uint32_t pollMask;
+
+    //!< Poll retries. Only valid for #SDM_RegisterAccess_Poll.
+    //!< Zero indicates retry forever, although host may have an upper limit or may interrupt.
+    size_t retries;
+} SDMRegisterAccess;
+
+/*!
  * @brief Arm ADI architecture-specific callbacks.
  *
  * For minor version API increments to remain backwards compatible, new callbacks must be added to the
  * end of this struct.
  */
 typedef struct SDMArmADICallbacks {
-    //! @name AP accesses
+    //! @name AP or CoreSight component register accesses
     //!
-    //! The _device_ parameter indicates the address of the AP to access. It can also be set to
-    //! @ref SDM_DefaultDevice, and the debugger will use a default AP. For ADIv5 systems, the
-    //! AP address is an APSEL value in the range 0-255. For ADIv6 systems, the AP address is an
-    //! APB address whose width depends on the target implementation. Nested ADIv6 APs are not
-    //! supported directly.
+    //! The _device_ parameter indicates the address of the AP or CoreSight component to access.
+    //! It can also be set to @ref SDM_DefaultDevice, and the debugger will use a default device.
+    //! For ADIv5 systems, the AP address is an APSEL value in the range 0-255. For ADIv6 systems,
+    //! the AP address is an APB address whose width depends on the target implementation.
+    //! Nested ADIv6 APs are not supported directly.
     //@{
     /*!
-     * @brief Read an AP register.
+     * @brief Access a series of AP or CoreSight component registers.
      *
-     * @param[in] device Address of the AP or #SDM_DefaultDevice.
-     * @param[in] registerAddress
-     * @param[out] value
+     * @param[in] device Address of the AP, CoreSight component or #SDM_DefaultDevice.
+     * @param[in/out] SDMRegisterAccess array of register accesses.
+     * @param[in] accessCount number of register accesses.
+     * @param[out] accessesComplete number of register accesses completed. On success this should equal accessCount.
      * @param[in] refcon
      */
-    SDMReturnCode (*apRead)(uint64_t device, uint64_t registerAddress, uint32_t *value, void *refcon);
-    /*!
-     * @brief Write an AP register.
-     *
-     * @param[in] device Address of the AP or #SDM_DefaultDevice.
-     * @param[in] registerAddress
-     * @param[in] value
-     * @param[in] refcon
-     */
-    SDMReturnCode (*apWrite)(uint64_t device, uint64_t registerAddress, uint32_t value, void *refcon);
+    SDMReturnCode (*registerAccess)(
+        uint64_t device,
+        SDMRegisterAccess *accesses,
+        size_t accessCount,
+        size_t *accessesComplete,
+        void *refcon);
     //@}
 } SDMArmADICallbacks;
 
