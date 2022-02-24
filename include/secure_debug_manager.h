@@ -244,7 +244,7 @@ typedef struct SDMFormElement {
         /*!
          * @brief Text field element descriptor.
          */
-        struct SDMTextFieldInfo {
+        struct {
             //! On input: containts the initial value for the text field.</br>
             //! On output: Buffer into which the entered text will be stored as a null-terminated UTF-8
             //! encoded string.
@@ -260,7 +260,7 @@ typedef struct SDMFormElement {
         /*!
          * @brief Checkbox element descriptor.
          */
-        struct SDMCheckboxInfo {
+        struct {
             //! On input: Initial checkbox state.</br>
             //! On output: Output checkbox state.
             //!
@@ -273,7 +273,7 @@ typedef struct SDMFormElement {
          *
          * By default a file is selected. If a folder is required, the #SDM_PathSelectIsFolder flag can be set.
          */
-        struct SDMPathSelectInfo {
+        struct {
             //! Array of filename extensions to allow. May be NULL, in which case any file
             //! can be selected. Not used if #SDM_PathSelectIsFolder is set.
             const char **extensions;
@@ -299,7 +299,7 @@ typedef struct SDMFormElement {
          *
          * The `selectionIndex` field is base 0. A value of -1 is used to indicate "no selection"".
          */
-        struct SDMItemSelectInfo {
+        struct {
             //! Pointer to array of item descriptors. Must not be NULL.
             const SDMItemInfo *items;
 
