@@ -117,13 +117,6 @@ enum SDMDebugArchitectureEnum {
 typedef uint32_t SDMDebugArchitecture;
 
 /*!
- * @brief Flags for SDMOpenParameters.
- */
-enum SDMFlags {
-    SDM_IsDefaultDeviceInfoValid = (1 << 0),
-};
-
-/*!
  * @brief Supported reset types.
  *
  * The reset type is passed to the host in the `resetStart()` and `resetFinish()` callbacks.
@@ -146,25 +139,6 @@ enum SDMResetTypeEnum {
 
 //! @brief Type for reset type.
 typedef uint32_t SDMResetType;
-
-/*!
- * @brief Transfer sizes for memory transfer callbacks.
- *
- * These enums are used with the #SDMCallbacks::readMemory and #SDMCallbacks::writeMemory
- * callbacks.
- *
- * Note that not all MEM-APs support all transfer sizes. If a transfer with an unsupported size is
- * attempted, a SDM_Fail_Unsupported_Transfer_Size error will be returned.
- */
-enum SDMMemorySizeEnum {
-    SDM_Memory8 = 8,    //!< Perform an 8-bit memory transfer.
-    SDM_Memory16 = 16,  //!< Perform a 16-bit memory transfer.
-    SDM_Memory32 = 32,  //!< Perform a 32-bit memory transfer.
-    SDM_Memory64 = 64,  //!< Perform a 64-bit memory transfer.
-};
-
-//! @brief Memory size parameter type.
-typedef uint32_t SDMMemorySize;
 
 /*!
  * @brief Item details for #SDM_ItemSelect form element.
@@ -328,13 +302,24 @@ typedef struct SDMForm {
     uint32_t elementCount;  //!< Number of element pointers.
 } SDMForm;
 
-
-enum SDMDefaultDeviceEnum {
-    //! @brief Value indicating the default AP should be used.
-    //!
-    //! Passed for the _device_ parameter of AP and memory access callbacks.
-    SDM_DefaultDevice = -1LL,
+/*!
+ * @brief Transfer sizes for memory transfer callbacks.
+ *
+ * These enums are used with the #SDMCallbacks::readMemory and #SDMCallbacks::writeMemory
+ * callbacks.
+ *
+ * Note that not all MEM-APs support all transfer sizes. If a transfer with an unsupported size is
+ * attempted, a SDM_Fail_Unsupported_Transfer_Size error will be returned.
+ */
+enum SDMTransferSizeEnum {
+    SDMTransferSize_8 = 8,    //!< Perform an 8-bit memory transfer.
+    SDMTransferSize_16 = 16,  //!< Perform a 16-bit memory transfer.
+    SDMTransferSize_32 = 32,  //!< Perform a 32-bit memory transfer.
+    SDMTransferSize_64 = 64,  //!< Perform a 64-bit memory transfer.
 };
+
+//! @brief Memory transfer size parameter type.
+typedef uint32_t SDMTransferSize;
 
 /*!
  * @brief Arm ADI architecture-specific memory transfer attributes.
@@ -362,6 +347,57 @@ enum SDMArmADITransferAttributes {
     //! MEM-AP CSW.PROT field.
     SDM_ArmADI_Direct_Attr_Mask = 0x7F00,
 };
+
+/*!
+ * @brief Supported types of device descriptors.
+ */
+enum SDMDeviceTypeEnum {
+    SDMDeviceType_ArmADI_AP = 0,                    //!< Arm ADI Access Port device.
+    SDMDeviceType_ArmADI_CoreSightComponent = 1,    //!< Arm ADI memory mapped CoreSight component accessible through a MEM-AP or the DP.
+};
+
+//! @brief Type for device type enum parameter.
+typedef uint32_t SDMDeviceType;
+
+/*!
+ * @brief Descriptor for the target device in memory and AP transfer callbacks.
+ */
+typedef struct SDMDeviceDescriptor {
+    SDMDeviceType deviceType; //!< The type of target device described by this descriptor.
+    union {
+        /*!
+         * @brief Arm ADI Access Port device type.
+         *
+         * Corresponds to #SDMDeviceType_ArmADI_AP.
+         */
+        struct {
+            //! Debug Port index. The first DP is index 0.
+            uint8_t dpIndex;
+
+            //! For v1 APs in ADIv5: 8-bit AP index. Only the low 8 bits are used.
+            //! For v2 APs in ADIv6: AP base address, up to 64-bit.
+            uint64_t address;
+        } armAP;
+
+        /*!
+         * @brief Arm ADI CoreSight component device type
+         *
+         * Corresponds to #SDMDeviceType_ArmADI_CoreSightComponent.
+         */
+        struct {
+            //! Debug Port index. The first DP is index 0.
+            uint8_t dpIndex;
+
+            //! Pointer to the descriptor for the MEM-AP through which the component is accessed.
+            //!
+            //! For ADIv6, this may be NULL to indicate that the component is within the DP address space.
+            const SDMDeviceDescriptor *memAp;
+
+            //! Base address of the component with the specified MEM-APs address space.
+            uint64_t baseAddress;
+        } armCoreSightComponent;
+    };
+} SDMDeviceDescriptor;
 
 // Forward declare.
 struct SDMNexus5001Callbacks;
@@ -419,12 +455,6 @@ typedef struct SDMRegisterAccess {
  */
 typedef struct SDMArmADICallbacks {
     //! @name AP or CoreSight component register accesses
-    //!
-    //! The _device_ parameter indicates the address of the AP or CoreSight component to access.
-    //! It can also be set to @ref SDM_DefaultDevice, and the debugger will use a default device.
-    //! For ADIv5 systems, the AP address is an APSEL value in the range 0-255. For ADIv6 systems,
-    //! the AP address is an APB address whose width depends on the target implementation.
-    //! Nested ADIv6 APs are not supported directly.
     //@{
     /*!
      * @brief Access a series of AP or CoreSight component registers.
@@ -521,23 +551,25 @@ typedef struct SDMCallbacks {
 
     //! @name Memory accesses
     //!
-    //! The _device_ parameter indicates the a debug-architecture-defined address for the interface
-    //! to the memory system. For the Arm ADI architecture, this is the address of the MEM-AP to use.
-    //! It can also be set to #SDM_DefaultDevice, and the debugger will use the default memory interface
-    //! device identified in SDMOpenParmeters. If no default memory interface device is indicated, then
-    //! use of #SDM_DefaultDevice will return an error.
+    //! The _device_ parameter must be a pointer to a device descriptor of valid type as defined by the
+    //! debug architecture. The _address_ parameter is always the address to access within the memory space
+    //! controlled by the specified device.
     //!
-    //! The _address_ parameter is always the address to access within the memory space controlled
-    //! by the selected device. For MEM-APs, this is obvious. When #SDM_DefaultDevice is used and the
-    //! default device type is #SDM_ArmADI_CoreSight_Component, then the _address_ parameter becomes an
-    //! offset relative to the base address of the CoreSight component's 4 kB memory region.
+    //! Arm ADI debug architecture allowed device types:
+    //! - #SDMDeviceType_ArmADI_AP
+    //!     - If the specified AP is not a MEM-AP, the resulting behaviour is undefined.
+    //!     - The _address_ parameter is the address within the memory space accessible through the MEM-AP.
+    //! - #SDMDeviceType_ArmADI_CoreSightComponent
+    //!     - The _address_ parameter is an offset relative to the base address of the CoreSight component's
+    //!         4 kB memory region.
+    //!     - This device type also has an associated MEM-AP set in the device descriptor.
     //!
     //! Addresses must be aligned to transfer size.
     //@{
     /*!
      * @brief Read target memory.
      *
-     * @param[in] device Address of the MEM-AP or #SDM_DefaultDevice.
+     * @param[in] device Pointer to descriptor for device through which the read will be performed.
      * @param[in] address Memory address of the data to read.
      * @param[in] transferSize Enum indicating the requested size of the transfer unit.
      * @param[in] transferCount Number of memory elements of size _transferSize_ to read.
@@ -552,9 +584,9 @@ typedef struct SDMCallbacks {
      * @retval SDM_Fail_No_Response
      */
     SDMReturnCode (*readMemory)(
-        uint64_t device,
+        const SDMDeviceDescriptor *device,
         uint64_t address,
-        SDMMemorySize transferSize,
+        SDMTransferSize transferSize,
         size_t transferCount,
         uint32_t attributes,
         void *data,
@@ -563,7 +595,7 @@ typedef struct SDMCallbacks {
     /*!
      * @brief Write target memory.
      *
-     * @param[in] device Address of the MEM-AP or #SDM_DefaultDevice.
+     * @param[in] device Pointer to descriptor for device through which the write will be performed.
      * @param[in] address Memory address of the data to write.
      * @param[in] transferSize Enum indicating the requested size of the transfer unit.
      * @param[in] transferCount Number of memory elements of size _transferSize_ to write.
@@ -576,9 +608,9 @@ typedef struct SDMCallbacks {
      *  SDMOpenParameters::refcon.
      */
     SDMReturnCode (*writeMemory)(
-        uint64_t device,
+        const SDMDeviceDescriptor *device,
         uint64_t address,
-        SDMMemorySize transferSize,
+        SDMTransferSize transferSize,
         size_t transferCount,
         uint32_t attributes,
         const void *value,
@@ -605,27 +637,6 @@ typedef struct SDMCallbacks {
     //@}
 
 } SDMCallbacks;
-
-/*!
- * @brief Supported types of default devices.
- */
-enum SDMDefaultDeviceTypeEnum {
-    SDM_NoDefaultDevice = 0,
-    SDM_ArmADI_AP = 1,
-    SDM_ArmADI_MEM_AP = 2,
-    SDM_ArmADI_CoreSight_Component = 3,
-};
-
-//! @brief Type for default device type enum parameter.
-typedef uint32_t SDMDefaultDeviceType;
-
-/*!
- * @brief Information about the default device.
- */
-typedef struct SDMDefaultDeviceInfo {
-    SDMDefaultDeviceType deviceType; //!< Type of the matched default device.
-    uint64_t address;   //!< Base address of the device.
-} SDMDefaultDeviceInfo;
 
 /*!
  * @brief Debugger connection modes.
@@ -661,9 +672,9 @@ typedef struct SDMOpenParameters {
     SDMDebugArchitecture debugArchitecture; /*!< Debug architecture for the target. */
     SDMCallbacks *callbacks; /*!< Callback collection */
     void *refcon; /*!< Debugger-supplied value passed to each of the callbacks. */
-    uint32_t flags; /*!< Flags passed to the SDM from the debugger. */
+    uint32_t flags; /*!< Flags passed to the SDM from the debugger. Reserved for future use. */
     const char **locales; /*!< Pointer to a NULL-terminated array of IETF BCP 47 language tags, e.g. "en-US", "fr-FR", "sv", etc. The  tags are sorted in decreasing priority order. */
-    SDMDefaultDeviceInfo defaultDeviceInfo; /*!< Information about the default device. */
+    const SDMDeviceDescriptor *defaultDevice; /*!< Descriptor for the default device. NULL if there is no default device. */
     SDMConnectMode connectMode; /*!< Debugger connect mode. */
 } SDMOpenParameters;
 
@@ -682,9 +693,9 @@ extern "C" {
  * @brief This function is called by the debugger to start a secure debug session with the remote platform.
  *
  * @param[out] handle New handle to the SDM instance.
- * @param[in] params Connection details and callbacks. This pointer and all pointers within the
- *  structure will remain valid until SDM_Close() is called, so the plugin can cache the value for later
- *  use.
+ * @param[in] params Connection details and callbacks. This pointer and all nested pointers will remain valid
+ *  until SDM_Close() is called, so the plugin can cache the value for later use without having to copy all
+ *  the data.
  */
 SDM_EXTERN SDMReturnCode SDM_Open(SDMHandle *handle, const SDMOpenParameters *params);
 
