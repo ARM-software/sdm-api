@@ -778,9 +778,10 @@ typedef struct SDMOpenParameters {
     SDMDebugArchitecture debugArchitecture; /*!< Debug architecture for the target. */
     SDMCallbacks *callbacks; /*!< Callback collection */
     void *refcon; /*!< Debugger-supplied value passed to each of the callbacks. */
+    const char *resourcesDirectoryPath; /*!< Absolute path to the directory containing the SDM plugin's resources. */
+    const char *manifestFilePath; /*!< Absolute path to the manifest XML file. */
     uint32_t flags; /*!< Flags passed to the SDM from the debugger. Reserved for future use. */
     const char **locales; /*!< Pointer to a NULL-terminated array of IETF BCP 47 language tags, e.g. "en-US", "fr-FR", "sv", etc. The  tags are sorted in decreasing priority order. */
-    const SDMDeviceDescriptor *defaultDevice; /*!< Descriptor for the default device. NULL if there is no default device. */
     SDMConnectMode connectMode; /*!< Debugger connect mode. */
 } SDMOpenParameters;
 
