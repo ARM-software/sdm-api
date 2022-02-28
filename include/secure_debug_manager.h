@@ -193,7 +193,7 @@ enum SDMArmADITransferAttributes {
 struct SDMNexus5001Callbacks;
 
 /*!
- * @brief Regsiter access operation enum.
+ * @brief Register access operation enum.
  *
  * These enums are used to specify the operation type of an individual #SDMRegisterAccess.
  */
@@ -217,23 +217,23 @@ typedef uint32_t SDMRegisterAccessOp;
  * @brief Details for individual register access.
  */
 typedef struct SDMRegisterAccess {
-    //!< Register offset address.
+    //! Register offset address.
     uint32_t registerOffset;
 
-    //!< Register access operation.
+    //! Register access operation.
     SDMRegisterAccessOp op;
 
-    //!< Register vaalue.
-    //!< For #SDM_RegisterAccess_Read, [out] read value.
-    //!< For #SDM_RegisterAccess_Write, [in] write value.
-    //!< For #SDM_RegisterAccess_Poll, [in] poll match value.
-    uint32_t *regValue;
+    //! Register value.
+    //! For #SDM_RegisterAccess_Read, [out] read value.
+    //! For #SDM_RegisterAccess_Write, [in] write value.
+    //! For #SDM_RegisterAccess_Poll, [in] poll match value.
+    uint32_t *value;
 
-    //!< Poll mask to match regValue. Only valid for #SDM_RegisterAccess_Poll.
+    //! Poll mask to match regValue. Only valid for #SDM_RegisterAccess_Poll.
     uint32_t pollMask;
 
-    //!< Poll retries. Only valid for #SDM_RegisterAccess_Poll.
-    //!< Zero indicates retry forever, although host may have an upper limit or may interrupt.
+    //! Poll retries. Only valid for #SDM_RegisterAccess_Poll.
+    //! Zero indicates retry forever, although host may have an upper limit or may interrupt.
     size_t retries;
 } SDMRegisterAccess;
 
