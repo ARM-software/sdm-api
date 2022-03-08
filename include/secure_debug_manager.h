@@ -71,6 +71,12 @@
 // compiler settings, so using a uint32_t type ensures ABI compatibility regardless of the compiler and
 // its configuration.
 
+//! @brief Boolean type used in the SDM API.
+//!
+//! This type is used to avoid issues caused by differences in the size of the `bool` type between
+//! C and C++, as well as any ABI differences.
+typedef uint8_t SDMBool;
+
 /*!
  * @brief API version number constants.
  *
@@ -80,22 +86,22 @@
  * proper functioning.
  */
 enum SDMVersionEnum {
-    SDM_CurrentMajorVersion = 0, /*!< Current API major version. */
-    SDM_CurrentMinorVersion = 1, /*!< Current API minor version. */
+    SDMVersion_CurrentMajor = 1, /*!< Current API major version. */
+    SDMVersion_CurrentMinor = 0, /*!< Current API minor version. */
 };
 
 /*!
  * @brief Return codes for SDM APIs and callbacks.
  */
 enum SDMReturnCodeEnum {
-    SDM_Success = 0, /*!< Success, no error */
-    SDM_Fail_No_Response = 1, /*!< No response, timeout */
-    SDM_Fail_Unsupported_Transfer_Size = 2, /*!< MEM-AP does not support the requested transfer size. */
-    SDM_Fail_User_Credentials = 3, /*!< Invalid user credentials for the debugged platform */
-    SDM_Fail_IO = 4, /*!< Failed to transmit/receive data to/from the device */
-    SDM_Fail_Internal = 5, /*!< An unspecified internal error occurred */
-    SDM_Fail_Parameter = 6, /*!< Invalid parameter */
-    SDM_Fail_UserCancelled = 7, /*!< User canceled the operation */
+    SDMReturnCode_Success = 0, /*!< Success, no error */
+    SDMReturnCode_NoResponse = 1, /*!< No response, timeout */
+    SDMReturnCode_UnsupportedTransferSize = 2, /*!< MEM-AP does not support the requested transfer size. */
+    SDMReturnCode_UserCredentials = 3, /*!< Invalid user credentials for the debugged platform */
+    SDMReturnCode_IO = 4, /*!< Failed to transmit/receive data to/from the device */
+    SDMReturnCode_Internal = 5, /*!< An unspecified internal error occurred */
+    SDMReturnCode_Parameter = 6, /*!< Invalid parameter */
+    SDMReturnCode_UserCancelled = 7, /*!< User canceled the operation */
 };
 
 //! @brief Type for return codes.
@@ -108,9 +114,9 @@ typedef struct _SDMOpaqueHandle * SDMHandle;
  * @brief Possible debug architectures.
  */
 enum SDMDebugArchitectureEnum {
-    SDM_Arm_ADIv5 = 0,  //!< Arm ADIv5 debug architecture. Uses #SDMArmADICallbacks.
-    SDM_Arm_ADIv6 = 1,  //!< Arm ADIv6 debug architecture. Uses #SDMArmADICallbacks.
-    SDM_Nexus5001 = 2,  //!< Nexus 5001 (IEEE-ISTO 5001-2003) debug architecture. Uses #SDMNexus5001Callbacks.
+    SDMDebugArchitecture_ArmADIv5 = 0,  //!< Arm ADIv5 debug architecture. Uses #SDMArmADICallbacks.
+    SDMDebugArchitecture_ArmADIv6 = 1,  //!< Arm ADIv6 debug architecture. Uses #SDMArmADICallbacks.
+    SDMDebugArchitecture_Nexus5001 = 2,  //!< Nexus 5001 (IEEE-ISTO 5001-2003) debug architecture. Uses #SDMNexus5001Callbacks.
 };
 
 //! @brief Type for debug architectures.
@@ -126,22 +132,22 @@ enum SDMResetTypeEnum {
     //!
     //! Note that this may include a target-specific reset type that is not directly selectable with one of these
     //! enumerators.
-    SDM_DefaultReset = 0,
+    SDMResetType_Default = 0,
 
     //! @brief System reset via nSRST pin.
     //!
-    //! If the target does not have hardware reset, this falls back to #SDM_DefaultReset.
-    SDM_HardwareReset = 1,
+    //! If the target does not have hardware reset, this falls back to #SDMResetType_Default.
+    SDMResetType_Hardware = 1,
 
     //! @brief System reset via software reset mechanism.
-    SDM_SoftwareReset = 2,
+    SDMResetType_Software = 2,
 };
 
 //! @brief Type for reset type.
 typedef uint32_t SDMResetType;
 
 /*!
- * @brief Item details for #SDM_ItemSelect form element.
+ * @brief Item details for #SDMForm_ItemSelect form element.
  *
  * The item info consists of a pair of strings. The first is a short name for the item. This will
  * appear in the list from which the user selects an item. When an item is selected, the long
@@ -149,18 +155,18 @@ typedef uint32_t SDMResetType;
  *
  * Both the short name and long description are UTF-8 encoded.
  */
-typedef struct SDMItemInfo {
+typedef struct SDMFormItemInfo {
     const char *itemShortName;          //!< Item name that will appear in the list. Must not be NULL.
     const char *itemLongDescription;    //!< Optional descriptive text for this item. Can be NULL.
-} SDMItemInfo;
+} SDMFormItemInfo;
 
 /*!
  * @brief Control state values.
  */
 enum SDMControlStateEnum {
-    SDM_ControlActiveState = 0,     //!< The control is activated. For a checkbox, this means checked.
-    SDM_ControlInactiveState = 1,   //!< The control is inactivated. For a checkbox, this means unchecked.
-    SDM_ControlMixedState = 2       //!< The control has a mixed state. For a checkbox, this is the '-' state.
+    SDMControlState_Active = 0,     //!< The control is activated. For a checkbox, this means checked.
+    SDMControlState_Inactive = 1,   //!< The control is inactivated. For a checkbox, this means unchecked.
+    SDMControlState_Mixed = 2,      //!< The control has a mixed state. For a checkbox, this is the '-' state.
 };
 
 //! @brief Control state type.
@@ -170,11 +176,11 @@ typedef uint32_t SDMControlState;
  * @brief Types of user input form elements.
  */
 enum SDMFormElementTypeEnum {
-    SDM_StaticText = 0,     //!< Static text element.
-    SDM_TextField = 1,      //!< Text input field.
-    SDM_Checkbox = 2,       //!< Single checkbox.
-    SDM_FileSelect = 3,     //!< File path field/selector.
-    SDM_ItemSelect = 4,     //!< One of many item select. For instance, a pop-up menu or scrolling list.
+    SDMForm_StaticText = 0,     //!< Static text element.
+    SDMForm_TextField = 1,      //!< Text input field.
+    SDMForm_Checkbox = 2,       //!< Single checkbox.
+    SDMForm_PathSelect = 3,     //!< File/folder path field/selector.
+    SDMForm_ItemSelect = 4,     //!< One of many item select. For instance, a pop-up menu or scrolling list.
 };
 
 //! @brief Form element type.
@@ -183,20 +189,24 @@ typedef uint32_t SDMFormElementType;
 /*!
  * @brief Flags for user input form elements.
  *
- * Not all flags apply to every form element type.
+ * These enumerators are bit masks that are intended to be bitwise-or'd together to be used in the
+ * SDMFormElement::flags field.
+ *
+ * Some flags apply to only specific form element types. The flag documentation indicates when this
+ * is the case.
  */
 enum SDMFormElementFlagsEnum {
-    SDM_ElementIsOptional = (1 << 0),   //!< The element does not have to be filled/set.
-    SDM_ElementIsDisabled = (1 << 1),   //!< The element is disabled.
-    SDM_ElementIsHidden = (1 << 2),     //!< The element should not be displayed.
-    SDM_ElementIsCacheable = (1 << 3),  //!< The element's value may be cached for redisplay.
-    SDM_TextFieldIsPassword = (1 << 8), //!< Text field is for entering a password; entered text should be bulleted.
-    SDM_CheckboxIsTristate = (1 << 12), //!< Checkbox must support the mixed state value.
-    SDM_PathSelectIsFolder = (1 << 16), //!< File select will require user to select folder instead of file.
+    SDMForm_IsOptional = (1 << 0),  //!< The element does not have to be filled/set.
+    SDMForm_IsDisabled = (1 << 1),  //!< The element is disabled.
+    SDMForm_IsHidden = (1 << 2),    //!< The element should not be displayed.
+    SDMForm_IsCacheable = (1 << 3), //!< The element's value may be cached for redisplay.
+    SDMForm_IsPassword = (1 << 8),  //!< Text field only. The field contains a password; entered text should be masked.
+    SDMForm_IsTristate = (1 << 12), //!< Checkbox only. Enable the mixed state value.
+    SDMForm_IsFolder = (1 << 16),   //!< Path select only. Select folder instead of file.
 };
 
 /*!
- * @brief Item details for #SDMCallbacks::enterText callback.
+ * @brief Item details for #SDMCallbacks::presentForm callback.
  *
  * All strings must be UTF-8 encoded and null-terminated.
  */
@@ -208,7 +218,7 @@ typedef struct SDMFormElement {
     uint32_t flags;     //!< Mask composed of #SDMFormElementFlagsEnum enums.
     union {
         /*!
-         * @brief Static text element descriptor.
+         * @brief Static text element descriptor (#SDMForm_StaticText).
          */
         struct {
             //! The static text string value. Must not be NULL.
@@ -216,26 +226,31 @@ typedef struct SDMFormElement {
         } staticText;
 
         /*!
-         * @brief Text field element descriptor.
+         * @brief Text field element descriptor (#SDMForm_TextField).
          */
         struct {
-            //! On input: containts the initial value for the text field.</br>
-            //! On output: Buffer into which the entered text will be stored as a null-terminated UTF-8
-            //! encoded string.
+            //! Buffer for text field's contents.
+            //!
+            //! On input: The initial value for the text field.<br/>
+            //! On output: Filled with the field's contents on form completion..
+            //!
+            //! The buffer's input and output values are null-terminated, UTF-8 encoded strings.
             //!
             //! Must not be NULL.
             char *textBuffer;
 
-            //! Size in bytes of the buffer pointed to by `textBuffer`. The maximum entered text length will not be
-            //! greater than this value - 1 (to accomodate the terminating null). Must be greater than 0.
+            //! Size in bytes of the buffer pointed to by `textBuffer`.
+            //!
+            //! The maximum entered text length will not be greater than this value - 1 (to accomodate the terminating
+            //! null). Must be greater than 0.
             uint32_t textBufferLength;
         } textField;
 
         /*!
-         * @brief Checkbox element descriptor.
+         * @brief Checkbox element descriptor (#SDMForm_Checkbox).
          */
         struct {
-            //! On input: Initial checkbox state.</br>
+            //! On input: Initial checkbox state.<br/>
             //! On output: Output checkbox state.
             //!
             //! Must not be NULL.
@@ -243,45 +258,47 @@ typedef struct SDMFormElement {
         } checkbox;
 
         /*!
-         * @brief Path select element descriptor.
+         * @brief Path select element descriptor (#SDMForm_PathSelect).
          *
-         * By default a file is selected. If a folder is required, the #SDM_PathSelectIsFolder flag can be set.
+         * By default a file is selected. If a folder is required, the #SDMForm_IsFolder flag can be set.
          */
         struct {
             //! Array of filename extensions to allow. May be NULL, in which case any file
-            //! can be selected. Not used if #SDM_PathSelectIsFolder is set.
+            //! can be selected. Not used if #SDMForm_IsFolder is set.
             const char **extensions;
 
-            //! Number of entries in the filename extensions array. Not used if #SDM_PathSelectIsFolder is set.
+            //! Number of entries in the filename extensions array. Not used if #SDMForm_IsFolder is set.
             uint32_t extensionsCount;
 
             //! Buffer for selected file path.
             //!
-            //! On input: Initial UTF-8 encoded path value.</br>
+            //! On input: Initial UTF-8 encoded path value.<br/>
             //! On output: Filled with the selected null-terminated UTF-8 encoded path on success.
             //!
             //! Must not be NULL.
             char *pathBuffer;
 
-            //! Size in bytes of the buffer pointed to by `pathBuffer`. The maximum entered text length will not be
-            //! greater than this value - 1 (for the terminating null). Must be greater than 0.
+            //! Size in bytes of the buffer pointed to by `pathBuffer`.
+            //!
+            //! The maximum entered text length will not be greater than this value - 1 (for the terminating null).
+            //! Must be greater than 0.
             uint32_t pathBufferLength;
         } pathSelect;
 
         /*!
-         * @brief Item select element descriptor.
-         *
-         * The `selectionIndex` field is base 0. A value of -1 is used to indicate "no selection"".
+         * @brief Item select element descriptor (#SDMForm_ItemSelect).
          */
         struct {
             //! Pointer to array of item descriptors. Must not be NULL.
-            const SDMItemInfo *items;
+            const SDMFormItemInfo *items;
 
             //! Number of elements of the @a items array.
             uint32_t itemCount;
 
-            //! On input: Initial selected item.</br>
+            //! On input: Initial selected item.<br/>
             //! On output: Set to the index of the selected item.
+            //!
+            //! The index is base 0. A value of -1 is used to indicate "no selection".
             //! Must not be NULL.
             int32_t *selectionIndex;
         } itemSelect;
@@ -289,9 +306,9 @@ typedef struct SDMFormElement {
 } SDMFormElement;
 
 /*!
- * @brief Descriptor for a form.
+ * @brief Descriptor for a user input form.
  *
- * A form consists of
+ * A form consists of an array of UI element descriptions.
  */
 typedef struct SDMForm {
     const char *id;         //!< Unique form ID string used for automation-supplied input. Must be a valid C identifier.
@@ -327,25 +344,25 @@ typedef uint32_t SDMTransferSize;
  * These enumerators define bit masks for the memory transfer attributes that can be specified
  * with a MEM-AP. Not all available memory attributes are provided.
  */
-enum SDMArmADITransferAttributes {
+enum SDMArmADITransferAttributesEnum {
     //! @brief Abstracted nonsecure attribute.
     //!
     //! The debugger must translate this attribute to the appropriate HNONSEC (AHB) or AxPROT[1] (AXI).
-    SDM_ArmADI_Nonsecure_Attr = 0x0001,
+    SDMTransferAttr_ArmADI_Nonsecure = 0x0001,
 
     //! @brief Abstracted non-privileged attribute.
     //!
     //! The debugger must translate this attribute to the appropriate HPROT[1] (AHB) or AxPROT[0] (AXI).
-    SDM_ArmADI_NonPrivileded_Attr = 0x0002,
+    SDMTransferAttr_ArmADI_NonPrivileded = 0x0002,
 
-    //! @brief Flag indicating #SDM_ADI_Direct_Attr_Mask should be used.
-    SDM_ArmADI_Direct_Attr_Enable = 0x0080,
+    //! @brief Flag indicating #SDMTransferAttr_ArmADI_DirectAttrMask should be used.
+    SDMTransferAttr_ArmADI_DirectAttrEnable = 0x0080,
 
     //! @brief Mask for passing direct memory transfer attributes.
     //!
-    //! If #SDM_ADI_Direct_Attr_Enable is set, any bits within this mask are passed directly as the
+    //! If #SDMTransferAttr_ArmADI_DirectAttrEnable is set, any bits within this mask are passed directly as the
     //! MEM-AP CSW.PROT field.
-    SDM_ArmADI_Direct_Attr_Mask = 0x7F00,
+    SDMTransferAttr_ArmADI_DirectAttrMask = 0x7F00,
 };
 
 /*!
@@ -366,23 +383,19 @@ typedef struct SDMDeviceDescriptor {
     SDMDeviceType deviceType; //!< The type of target device described by this descriptor.
     union {
         /*!
-         * @brief Arm ADI Access Port device type.
-         *
-         * Corresponds to #SDMDeviceType_ArmADI_AP.
+         * @brief Arm ADI Access Port device type (#SDMDeviceType_ArmADI_AP).
          */
         struct {
             //! Debug Port index. The first DP is index 0.
             uint8_t dpIndex;
 
-            //! For v1 APs in ADIv5: 8-bit AP index. Only the low 8 bits are used.
+            //! For v1 APs in ADIv5: 8-bit AP index. Only the low 8 bits are used.<br/>
             //! For v2 APs in ADIv6: AP base address, up to 64-bit.
             uint64_t address;
         } armAP;
 
         /*!
-         * @brief Arm ADI CoreSight component device type
-         *
-         * Corresponds to #SDMDeviceType_ArmADI_CoreSightComponent.
+         * @brief Arm ADI CoreSight component device type (#SDMDeviceType_ArmADI_CoreSightComponent).
          */
         struct {
             //! Debug Port index. The first DP is index 0.
@@ -409,15 +422,15 @@ struct SDMNexus5001Callbacks;
  */
 enum SDMRegisterAccessOpEnum {
     //! @brief Register read.
-    SDM_RegisterAccess_Read = 1,
+    SDMRegisterAccessOp_Read = 1,
 
     //! @brief Register write.
-    SDM_RegisterAccess_Write = 2,
+    SDMRegisterAccessOp_Write = 2,
 
     //! @brief Register poll.
     //!
     //! Repeatedly read register until an expected value or retry limit reached.
-    SDM_RegisterAccess_Poll = 3,
+    SDMRegisterAccessOp_Poll = 3,
 };
 
 //! @brief Type for register access operation.
@@ -434,15 +447,18 @@ typedef struct SDMRegisterAccess {
     SDMRegisterAccessOp op;
 
     //! Register value.
-    //! For #SDM_RegisterAccess_Read, [out] read value.
-    //! For #SDM_RegisterAccess_Write, [in] write value.
-    //! For #SDM_RegisterAccess_Poll, [in] poll match value.
+    //!
+    //! For #SDMRegisterAccessOp_Read, [out] read value.<br/>
+    //! For #SDMRegisterAccessOp_Write, [in] write value.<br/>
+    //! For #SDMRegisterAccessOp_Poll, [in] poll match value.
+    //!
+    //! Must not be NULL.
     uint32_t *value;
 
-    //! Poll mask to match regValue. Only valid for #SDM_RegisterAccess_Poll.
+    //! Poll mask to match regValue. Only valid for #SDMRegisterAccessOp_Poll.
     uint32_t pollMask;
 
-    //! Poll retries. Only valid for #SDM_RegisterAccess_Poll.
+    //! Poll retries. Only valid for #SDMRegisterAccessOp_Poll.
     //! Zero indicates retry forever, although host may have an upper limit or may interrupt.
     size_t retries;
 } SDMRegisterAccess;
@@ -459,14 +475,16 @@ typedef struct SDMArmADICallbacks {
     /*!
      * @brief Access a series of AP or CoreSight component registers.
      *
-     * @param[in] device Address of the AP, CoreSight component or #SDM_DefaultDevice.
-     * @param[in/out] SDMRegisterAccess array of register accesses.
+     * @param[in] device Pointer to descriptor for device through which the read will be performed. May be either
+     *  a #SDMDeviceType_ArmADI_AP or #SDMDeviceType_ArmADI_CoreSightComponent descriptor.
+     * @param[in,out] SDMRegisterAccess array of register accesses.
      * @param[in] accessCount number of register accesses.
      * @param[out] accessesComplete number of register accesses completed. On success this should equal accessCount.
-     * @param[in] refcon
+     * @param[in] refcon Must be set to the reference value provided by the debugger through
+     *  SDMOpenParameters::refcon.
      */
     SDMReturnCode (*registerAccess)(
-        uint64_t device,
+        const SDMDeviceDescriptor *device,
         SDMRegisterAccess *accesses,
         size_t accessCount,
         size_t *accessesComplete,
@@ -504,13 +522,13 @@ typedef struct SDMCallbacks {
     /*!
      * @brief Inform the debugger of the current authentication progress.
      *
-     * This callback should only be invoked during a call to the SDM_Authenticate() API. Otherwise
+     * This callback should only be invoked during a call to the SDMAuthenticate() API. Otherwise
      * calls will be ignored.
      *
      * Host support for reporting progress is optional.
      *
-     * @param progressMessage
-     * @param percentComplete
+     * @param[in] progressMessage
+     * @param[in] percentComplete
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
      */
@@ -525,8 +543,10 @@ typedef struct SDMCallbacks {
      *
      * @param[in] errorMessage The text of the error message. Must not be NULL.
      * @param[in] errorDetails Detailed description of the error. May be NULL.
+     * @param[in] refcon Must be set to the reference value provided by the debugger through
+     *  SDMOpenParameters::refcon.
      */
-    void (*setErrorMessage)(const char *errorMessage, const char *errorDetails);
+    void (*setErrorMessage)(const char *errorMessage, const char *errorDetails, void *refcon);
     //@}
 
     //! @name Target reset
@@ -575,13 +595,13 @@ typedef struct SDMCallbacks {
      * @param[in] transferCount Number of memory elements of size _transferSize_ to read.
      * @param[in] attributes Debug-architecture-defined set of attributes that will apply to the transfer, such
      *  as Non-secure, Privileged, Cacheable, and so on. For Arm ADI, this is a value produced by OR'ing
-     *  the enums defined in #SDMArmADITransferAttributes.
+     *  the enums defined in #SDMArmADITransferAttributesEnum.
      * @param[out] data Buffer where read data will be written. Must be at least _transferSize_ * _transferCount_
      *  bytes in length.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
-     * @retval SDM_Success The read completed successfully and _value_ holds the data.
-     * @retval SDM_Fail_No_Response
+     * @retval SDMReturnCode_Success The read completed successfully and _value_ holds the data.
+     * @retval SDMReturnCode_No_Response
      */
     SDMReturnCode (*readMemory)(
         const SDMDeviceDescriptor *device,
@@ -601,7 +621,7 @@ typedef struct SDMCallbacks {
      * @param[in] transferCount Number of memory elements of size _transferSize_ to write.
      * @param[in] attributes Debug-architecture-defined set of attributes that will apply to the transfer, such
      *  as Non-secure, Privileged, Cacheable, and so on. For Arm ADI, this is a value produced by OR'ing
-     *  the enums defined in #SDMArmADITransferAttributes.
+     *  the enums defined in #SDMArmADITransferAttributesEnum.
      * @param[in] data Buffer from where data to be written is read. Must be at least _transferSize_ * _transferCount_
      *  bytes in length.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
@@ -629,9 +649,9 @@ typedef struct SDMCallbacks {
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
      *
-     * @retval SDM_Success User provided requested input.
-     * @retval SDM_Fail_Parameter There was an issue with the form descriptors.
-     * @retval SDM_Fail_UserCancelled The user cancelled.
+     * @retval SDMReturnCode_Success User provided requested input.
+     * @retval SDMReturnCode_Parameter There was an issue with the form descriptors.
+     * @retval SDMReturnCode_UserCancelled The user cancelled.
      */
     SDMReturnCode (*presentForm)(const SDMForm *form, void *refcon);
     //@}
@@ -645,30 +665,30 @@ enum SDMConnectModeEnum {
     //! @brief Connect in order to load application into memory before running.
     //!
     //! When the SDM authenticates, the application that will be debugged has not yet been loaded.
-    SDM_ConnectLoad = 0,
+    SDMConnectMode_Load = 0,
 
     //! @brief Connect and reset to run previously loaded application.
     //!
     //! When the SDM authenticates, the application that will be debugged has already been loaded.
-    SDM_ConnectRestart = 1,
+    SDMConnectMode_Restart = 1,
 
     //! @brief Attach to running application.
     //!
     //! The SDM should not reset the target.
-    SDM_ConnectAttach = 2,
+    SDMConnectMode_Attach = 2,
 };
 
 //! @brief Type for default device type enum parameter.
 typedef uint32_t SDMConnectMode;
 
 /*!
- * @brief Parameters passed to SDM_Open() by the debugger.
+ * @brief Parameters passed to SDMOpen() by the debugger.
  */
 typedef struct SDMOpenParameters {
     struct {
         uint16_t major; /*!< Client interface major version. */
         uint16_t minor; /*!< Client interface minor version. */
-    } version; /*!< Client interface version. @see #SDMVersion. */
+    } version; /*!< Client interface version. @see #SDMVersionEnum. */
     SDMDebugArchitecture debugArchitecture; /*!< Debug architecture for the target. */
     SDMCallbacks *callbacks; /*!< Callback collection */
     void *refcon; /*!< Debugger-supplied value passed to each of the callbacks. */
@@ -679,25 +699,29 @@ typedef struct SDMOpenParameters {
 } SDMOpenParameters;
 
 /*!
- * @brief Parameters passed by the debugger to the SDM_Authenticate() API.
+ * @brief Parameters passed by the debugger to the SDMAuthenticate() API.
  */
 typedef struct SDMAuthenticateParameters {
-    bool isLastAuthentication; //!< False if at least one subsequent call to SDM_Authenticate() is expected.
+    SDMBool isLastAuthentication; //!< False if at least one subsequent call to SDMAuthenticate() is expected.
 } SDMAuthenticateParameters;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+//! @name API
+//@{
 /*!
  * @brief This function is called by the debugger to start a secure debug session with the remote platform.
  *
  * @param[out] handle New handle to the SDM instance.
  * @param[in] params Connection details and callbacks. This pointer and all nested pointers will remain valid
- *  until SDM_Close() is called, so the plugin can cache the value for later use without having to copy all
+ *  until SDMClose() is called, so the plugin can cache the value for later use without having to copy all
  *  the data.
+ *
+ * @retval SDMReturnCode_Success SDM plugin initialized successfully.
  */
-SDM_EXTERN SDMReturnCode SDM_Open(SDMHandle *handle, const SDMOpenParameters *params);
+SDM_EXTERN SDMReturnCode SDMOpen(SDMHandle *handle, const SDMOpenParameters *params);
 
 /*!
  * @brief Perform authentication to unlock debug access.
@@ -708,13 +732,17 @@ SDM_EXTERN SDMReturnCode SDM_Open(SDMHandle *handle, const SDMOpenParameters *pa
  * @param[in] handle Handle to the SDM instance.
  * @param[in] params Parameters for the authentication. The pointer only needs to be valid during
  *      the call to this API.
+ *
+ * @retval SDMReturnCode_Success Authentication succeeded.
  */
-SDM_EXTERN SDMReturnCode SDM_Authenticate(SDMHandle handle, const SDMAuthenticateParameters *params);
+SDM_EXTERN SDMReturnCode SDMAuthenticate(SDMHandle handle, const SDMAuthenticateParameters *params);
 
 /*!
  * @brief Called by the debugger to resume the boot of the remote platform.
  *
- * This API is only a request from the host to the plugin. It may be implemented as a no-op.
+ * This API is only a request from the host to the plugin. It may be implemented as a no-op. Note also
+ * that the effect may be different depending on the runtime environment of the target, as well as the
+ * SDMOpen::connectMode value.
  *
  * It is typically called after the debugger places its breakpoints at the booting debugged system.
  * It is only useful if the debugged system supports the introduction of debug certificate in the
@@ -722,8 +750,10 @@ SDM_EXTERN SDMReturnCode SDM_Authenticate(SDMHandle handle, const SDMAuthenticat
  * it does not wait for the resume command.
  *
  * @param[in] handle Handle to the SDM instance.
+ *
+ * @retval SDMReturnCode_Success The target device has resumed its boot process.
  */
-SDM_EXTERN SDMReturnCode SDM_ResumeBoot(SDMHandle handle);
+SDM_EXTERN SDMReturnCode SDMResumeBoot(SDMHandle handle);
 
 /*!
  * @brief Close the SDM session.
@@ -732,8 +762,11 @@ SDM_EXTERN SDMReturnCode SDM_ResumeBoot(SDMHandle handle);
  * resources it allocated.
  *
  * @param[in] handle Handle to the SDM instance.
+ *
+ * @retval SDMReturnCode_Success SDM plugin was successfully uninitialized.
  */
-SDM_EXTERN SDMReturnCode SDM_Close(SDMHandle handle);
+SDM_EXTERN SDMReturnCode SDMClose(SDMHandle handle);
+//@}
 
 #ifdef __cplusplus
 }
