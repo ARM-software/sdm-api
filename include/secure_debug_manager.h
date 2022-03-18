@@ -404,7 +404,7 @@ typedef struct SDMDeviceDescriptor {
             //! Pointer to the descriptor for the MEM-AP through which the component is accessed.
             //!
             //! For ADIv6, this may be NULL to indicate that the component is within the DP address space.
-            const SDMDeviceDescriptor *memAp;
+            const struct SDMDeviceDescriptor *memAp;
 
             //! Base address of the component with the specified MEM-APs address space.
             uint64_t baseAddress;
