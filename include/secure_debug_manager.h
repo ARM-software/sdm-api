@@ -95,13 +95,17 @@ enum SDMVersionEnum {
  */
 enum SDMReturnCodeEnum {
     SDMReturnCode_Success = 0, /*!< Success, no error */
-    SDMReturnCode_NoResponse = 1, /*!< No response, timeout */
-    SDMReturnCode_UnsupportedTransferSize = 2, /*!< MEM-AP does not support the requested transfer size. */
-    SDMReturnCode_UserCredentials = 3, /*!< Invalid user credentials for the debugged platform */
-    SDMReturnCode_IO = 4, /*!< Failed to transmit/receive data to/from the device */
-    SDMReturnCode_Internal = 5, /*!< An unspecified internal error occurred */
-    SDMReturnCode_Parameter = 6, /*!< Invalid parameter */
-    SDMReturnCode_UserCancelled = 7, /*!< User canceled the operation */
+    SDMReturnCode_RequestFailed = 1, /*!< Generic failure, used when a more specific error is not available */
+    SDMReturnCode_InvalidUserCredentials = 2, /*!< Invalid user credentials for the debugged platform */
+    SDMReturnCode_InvalidArgument = 3, /*!< Invalid argument value */
+    SDMReturnCode_UserCancelled = 4, /*!< User canceled the operation */
+    SDMReturnCode_UnsupportedOperation = 5, /*!< Requested operation is not supported */
+    SDMReturnCode_IOError = 6, /*!< Failed to communicate with the target */
+    SDMReturnCode_TimeoutError = 7, /*!< No response, timeout */
+    SDMReturnCode_UnsupportedTransferSize = 8, /*!< Device does not support the requested transfer size. */
+    SDMReturnCode_TransferFault = 9, /*!< Memory or register access failed due to a transfer fault */
+    SDMReturnCode_TransferError = 10, /*!< Memory or register access failed due to an error other than a fault */
+    SDMReturnCode_InternalError = 11, /*!< An unspecified internal error occurred */
 };
 
 //! @brief Type for return codes.
@@ -482,6 +486,13 @@ typedef struct SDMArmADICallbacks {
      * @param[out] accessesComplete number of register accesses completed. On success this should equal accessCount.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
+     *
+     * @retval SDMReturnCode_Success Transfer completed.
+     * @retval SDMReturnCode_InvalidArgument
+     * @retval SDMReturnCode_TransferFault
+     * @retval SDMReturnCode_TransferError
+     * @retval SDMReturnCode_UnsupportedTransferSize
+     * @retval SDMReturnCode_TimeoutError
      */
     SDMReturnCode (*registerAccess)(
         const SDMDeviceDescriptor *device,
@@ -556,6 +567,11 @@ typedef struct SDMCallbacks {
      * @param[in] resetType One of the #SDMResetTypeEnum enumerators.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
+     *
+     * @retval SDMReturnCode_Success Reset stage completed.
+     * @retval SDMReturnCode_RequestFailed
+     * @retval SDMReturnCode_IOError
+     * @retval SDMReturnCode_TimeoutError
      */
     SDMReturnCode (*resetStart)(SDMResetType resetType, void *refcon);
 
@@ -565,6 +581,11 @@ typedef struct SDMCallbacks {
      *  `resetStart()`.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
+     *
+     * @retval SDMReturnCode_Success Reset stage completed.
+     * @retval SDMReturnCode_RequestFailed
+     * @retval SDMReturnCode_IOError
+     * @retval SDMReturnCode_TimeoutError
      */
     SDMReturnCode (*resetFinish)(SDMResetType resetType, void *refcon);
     //@}
@@ -602,6 +623,13 @@ typedef struct SDMCallbacks {
      *  SDMOpenParameters::refcon.
      * @retval SDMReturnCode_Success The read completed successfully and _value_ holds the data.
      * @retval SDMReturnCode_No_Response
+     *
+     * @retval SDMReturnCode_Success Transfer completed.
+     * @retval SDMReturnCode_InvalidArgument
+     * @retval SDMReturnCode_TransferFault
+     * @retval SDMReturnCode_TransferError
+     * @retval SDMReturnCode_UnsupportedTransferSize
+     * @retval SDMReturnCode_TimeoutError
      */
     SDMReturnCode (*readMemory)(
         const SDMDeviceDescriptor *device,
@@ -626,6 +654,13 @@ typedef struct SDMCallbacks {
      *  bytes in length.
      * @param[in] refcon Must be set to the reference value provided by the debugger through
      *  SDMOpenParameters::refcon.
+     *
+     * @retval SDMReturnCode_Success Transfer completed.
+     * @retval SDMReturnCode_InvalidArgument
+     * @retval SDMReturnCode_TransferFault
+     * @retval SDMReturnCode_TransferError
+     * @retval SDMReturnCode_UnsupportedTransferSize
+     * @retval SDMReturnCode_TimeoutError
      */
     SDMReturnCode (*writeMemory)(
         const SDMDeviceDescriptor *device,
@@ -650,7 +685,7 @@ typedef struct SDMCallbacks {
      *  SDMOpenParameters::refcon.
      *
      * @retval SDMReturnCode_Success User provided requested input.
-     * @retval SDMReturnCode_Parameter There was an issue with the form descriptors.
+     * @retval SDMReturnCode_InvalidArgument There was an issue with the form descriptors.
      * @retval SDMReturnCode_UserCancelled The user cancelled.
      */
     SDMReturnCode (*presentForm)(const SDMForm *form, void *refcon);
@@ -720,6 +755,7 @@ extern "C" {
  *  the data.
  *
  * @retval SDMReturnCode_Success SDM plugin initialized successfully.
+ * @retval SDMReturnCode_RequestFailed
  */
 SDM_EXTERN SDMReturnCode SDMOpen(SDMHandle *handle, const SDMOpenParameters *params);
 
@@ -734,6 +770,11 @@ SDM_EXTERN SDMReturnCode SDMOpen(SDMHandle *handle, const SDMOpenParameters *par
  *      the call to this API.
  *
  * @retval SDMReturnCode_Success Authentication succeeded.
+ * @retval SDMReturnCode_RequestFailed
+ * @retval SDMReturnCode_InvalidUserCredentials
+ * @retval SDMReturnCode_UserCancelled
+ * @retval SDMReturnCode_IOError
+ * @retval SDMReturnCode_TimeoutError
  */
 SDM_EXTERN SDMReturnCode SDMAuthenticate(SDMHandle handle, const SDMAuthenticateParameters *params);
 
@@ -752,6 +793,8 @@ SDM_EXTERN SDMReturnCode SDMAuthenticate(SDMHandle handle, const SDMAuthenticate
  * @param[in] handle Handle to the SDM instance.
  *
  * @retval SDMReturnCode_Success The target device has resumed its boot process.
+ * @retval SDMReturnCode_RequestFailed
+ * @retval SDMReturnCode_UnsupportedOperation
  */
 SDM_EXTERN SDMReturnCode SDMResumeBoot(SDMHandle handle);
 
