@@ -112,15 +112,15 @@ enum SDMReturnCodeEnum {
 typedef uint32_t SDMReturnCode;
 
 //! @brief Opaque handle to an opened instance of the SDM.
-typedef struct _SDMOpaqueHandle * SDMHandle;
+typedef struct _SDMOpaqueHandle *SDMHandle;
 
 /*!
  * @brief Possible debug architectures.
  */
 enum SDMDebugArchitectureEnum {
-    SDMDebugArchitecture_ArmADIv5 = 0,  //!< Arm ADIv5 debug architecture. Uses #SDMArmADICallbacks.
-    SDMDebugArchitecture_ArmADIv6 = 1,  //!< Arm ADIv6 debug architecture. Uses #SDMArmADICallbacks.
-    SDMDebugArchitecture_Nexus5001 = 2,  //!< Nexus 5001 (IEEE-ISTO 5001-2003) debug architecture. Uses #SDMNexus5001Callbacks.
+    SDMDebugArchitecture_ArmADIv5 = 0,  //!< Arm ADIv5 debug architecture.
+    SDMDebugArchitecture_ArmADIv6 = 1,  //!< Arm ADIv6 debug architecture.
+    SDMDebugArchitecture_Nexus5001 = 2,  //!< Nexus 5001 (IEEE-ISTO 5001-2003) debug architecture.
 };
 
 //! @brief Type for debug architectures.
@@ -416,9 +416,6 @@ typedef struct SDMDeviceDescriptor {
     };
 } SDMDeviceDescriptor;
 
-// Forward declare.
-struct SDMNexus5001Callbacks;
-
 /*!
  * @brief Register access operation enum.
  *
@@ -444,13 +441,16 @@ typedef uint32_t SDMRegisterAccessOp;
  * @brief Details for individual register access.
  */
 typedef struct SDMRegisterAccess {
-    //! Register offset address.
-    uint32_t registerOffset;
+    //! @brief Register address.
+    //!
+    //! Interpretation depends on the device type. Typically either an address within a memory space
+    //! or an offset from the device's base.
+    uint64_t address;
 
-    //! Register access operation.
+    //! @brief Register access operation.
     SDMRegisterAccessOp op;
 
-    //! Register value.
+    //! @brief Register value.
     //!
     //! For #SDMRegisterAccessOp_Read, [out] read value.<br/>
     //! For #SDMRegisterAccessOp_Write, [in] write value.<br/>
@@ -459,57 +459,17 @@ typedef struct SDMRegisterAccess {
     //! Must not be NULL.
     uint32_t *value;
 
-    //! Poll mask to match regValue. Only valid for #SDMRegisterAccessOp_Poll.
+    //! @brief Poll mask to match regValue.
+    //!
+    //! Only valid for #SDMRegisterAccessOp_Poll.
     uint32_t pollMask;
 
-    //! Poll retries. Only valid for #SDMRegisterAccessOp_Poll.
-    //! Zero indicates retry forever, although host may have an upper limit or may interrupt.
+    //! @brief Poll retry count.
+    //!
+    //! Only valid for #SDMRegisterAccessOp_Poll.
+    //! Zero indicates retry forever, although host or probe may have an upper limit, or may interrupt.
     size_t retries;
 } SDMRegisterAccess;
-
-/*!
- * @brief Arm ADI architecture-specific callbacks.
- *
- * For minor version API increments to remain backwards compatible, new callbacks must be added to the
- * end of this struct.
- */
-typedef struct SDMArmADICallbacks {
-    //! @name AP or CoreSight component register accesses
-    //@{
-    /*!
-     * @brief Access a series of AP or CoreSight component registers.
-     *
-     * @param[in] device Pointer to descriptor for device through which the read will be performed. May be either
-     *  a #SDMDeviceType_ArmADI_AP or #SDMDeviceType_ArmADI_CoreSightComponent descriptor.
-     * @param[in,out] SDMRegisterAccess array of register accesses.
-     * @param[in] accessCount number of register accesses.
-     * @param[out] accessesComplete number of register accesses completed. On success this should equal accessCount.
-     * @param[in] refcon Must be set to the reference value provided by the debugger through
-     *  SDMOpenParameters::refcon.
-     *
-     * @retval SDMReturnCode_Success Transfer completed.
-     * @retval SDMReturnCode_InvalidArgument
-     * @retval SDMReturnCode_TransferFault
-     * @retval SDMReturnCode_TransferError
-     * @retval SDMReturnCode_UnsupportedTransferSize
-     * @retval SDMReturnCode_TimeoutError
-     */
-    SDMReturnCode (*registerAccess)(
-        const SDMDeviceDescriptor *device,
-        SDMRegisterAccess *accesses,
-        size_t accessCount,
-        size_t *accessesComplete,
-        void *refcon);
-    //@}
-} SDMArmADICallbacks;
-
-/*!
- * @brief Union to map callback structure for the specific debug architecture.
- */
-typedef union SDMArchitectureCallbacks {
-    struct SDMArmADICallbacks *armADICallbacks;    //!< Callbacks for the Arm ADIv5 and ADIv6 debug architectures.
-    struct SDMNexus5001Callbacks *nexus5001Callbacks;  //!< Callbacks for the Nexus 5001 debug architecture.
-} SDMArchitectureCallbacks;
 
 /*!
  * @brief Collection of common callback functions provided by the debugger.
@@ -525,8 +485,8 @@ typedef union SDMArchitectureCallbacks {
  * end of this struct.
  */
 typedef struct SDMCallbacks {
-    //! @brief Debug architecture-specific callbacks.
-    SDMArchitectureCallbacks architectureCallbacks;
+    //! @brief Debug architecture-specific callbacks. Reserved for future use.
+    void *architectureCallbacks;
 
     //! @name Progress
     //@{
@@ -596,7 +556,7 @@ typedef struct SDMCallbacks {
     //! debug architecture. The _address_ parameter is always the address to access within the memory space
     //! controlled by the specified device.
     //!
-    //! Arm ADI debug architecture allowed device types:
+    //! Arm ADIv5 and ADIv6 debug architecture allowed device types:
     //! - #SDMDeviceType_ArmADI_AP
     //!     - If the specified AP is not a MEM-AP, the resulting behaviour is undefined.
     //!     - The _address_ parameter is the address within the memory space accessible through the MEM-AP.
@@ -669,6 +629,97 @@ typedef struct SDMCallbacks {
         size_t transferCount,
         uint32_t attributes,
         const void *value,
+        void *refcon);
+    //@}
+
+    //! @name Register accesses
+    //@{
+    /*!
+     * @brief Perform a series of device registers accesses.
+     *
+     * A sequence of zero or more read, write, or poll operations is performed in the order specified. Operations
+     * may be mixed in any combination.
+     *
+     * For poll operations, the indicated register is repeatedly read as fast as the probe and interface allow.
+     * Each read value is ANDed with SDMRegisterAccess::pollMask and the result compared with
+     * *SDMRegisterAccess::value. If the comparison is a match, polling stops and the access sequence moves to
+     * the next operation (or terminates).
+     *
+     * All register reads and writes are of the same size, specified by the _transferSize_ parameter. In v1.0 of
+     * the SDM API, only 32-bit transfers (#SDMTransferSize_32) are allowed.
+     *
+     * The _device_ parameter must be a pointer to a device descriptor of valid type as defined by the
+     * debug architecture.
+     *
+     * Arm ADIv5 and ADIv6 debug architecture allowed device types:
+     * - #SDMDeviceType_ArmADI_AP
+     *      - Can be any type of AP.
+     *      - The _SDMRegisterAccess::address_ value is the address of one of the AP's registers.
+     * - #SDMDeviceType_ArmADI_CoreSightComponent
+     *      - The _SDMRegisterAccess::address_ value is an offset relative to the base address of the CoreSight
+     *          component's 4 kB memory region.
+     *      - This device type also has an associated MEM-AP set in the device descriptor.
+     *
+     * Depending on the SDM host and debug probe capabilities, the register accesses may be performed one at a
+     * time or be sent as a group to the debug probe. The timing interval between separate accesses is not guaranteed.
+     *
+     * Example that waits for a FIFO to have room, then fills it:
+     *
+     * ```c
+     * // Register value variables.
+     * uint32_t statusWord = 0; // Match (reg & FIFO_STATUS_FULL_MASK) == 0.
+     * uint32_t dataWord; // Set to value to write into FIFO.
+     *
+     * // Sequence of register accesses to perform.
+     * SDMRegisterAccess accesses[] = {
+     *         {
+     *             .address = FIFO_STATUS_ADDR,
+     *             .op = SDMRegisterAccessOp_Poll,
+     *             .value = &statusWord,
+     *             .pollMask = FIFO_STATUS_FULL_MASK,
+     *             .retries = 0, // Infinite wait.
+     *         },
+     *         {
+     *             .address = FIFO_DATA_ADDR,
+     *             .op = SDMRegisterAccessOp_Write,
+     *             .value = &dataWord,
+     *         },
+     *     };
+     *
+     * size_t accessesCompleted = 0;
+     * SDMReturnCode result = params->callbacks->registerAccess(
+     *                                                  &myDevice,
+     *                                                  SDMTransferSize_32,
+     *                                                  &accesses,
+     *                                                  ARRAY_SIZE(accesses),
+     *                                                  &accessesCompleted,
+     *                                                  params->refcon
+     *                                                  );
+     * ```
+     *
+     * @param[in] device Pointer to descriptor for device through which the read will be performed.
+     * @param[in] transferSize The size of all register accesses in this call. Only #SDMTransferSize_32 is supported in
+     *  SDM API v1.0.
+     * @param[in,out] accesses Array of SDMRegisterAccess register accesses descriptors.
+     * @param[in] accessCount Number of register accesses. The _accesses_ parameter must point to an array containing
+     *  at least this number of elements. A value of zero is allowed, and results in no operation.
+     * @param[out] accessesCompleted Number of register accesses completed. On success this will equal accessCount.
+     * @param[in] refcon Must be set to the reference value provided by the debugger through
+     *  SDMOpenParameters::refcon.
+     *
+     * @retval SDMReturnCode_Success Transfer completed.
+     * @retval SDMReturnCode_InvalidArgument
+     * @retval SDMReturnCode_TransferFault
+     * @retval SDMReturnCode_TransferError
+     * @retval SDMReturnCode_UnsupportedTransferSize
+     * @retval SDMReturnCode_TimeoutError
+     */
+    SDMReturnCode (*registerAccess)(
+        const SDMDeviceDescriptor *device,
+        SDMTransferSize transferSize,
+        const SDMRegisterAccess *accesses,
+        size_t accessCount,
+        size_t *accessesCompleted,
         void *refcon);
     //@}
 
