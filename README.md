@@ -22,7 +22,7 @@ The goal is for silicon or software vendors to provide an implementation of the 
 
 The SDM API is designed to be debug architecture agnostic, so it can be used on debug architectures other than Arm ADI. However, a given implementation of the API will only support the debug architectures for which it was written.
 
-The SDM API supports any secure debug protocol. A reference implementation is provided for the PSA Authenticated Debug Access Control (PSA ADAC) protocol. As part of this reference implementation, additional lower-level APIs are planned. These will define layers such as a Credential provider and Debug mailbox interface.
+The SDM API supports any secure debug protocol. A reference implementation is provided for the PSA Authenticated Debug Access Control (ADAC) protocol. As part of this reference implementation, additional lower-level APIs are planned. These will define layers such as a Credential provider and Debug mailbox interface.
 
 ### Structure
 
@@ -44,12 +44,10 @@ Eventually a schema will be created for the manifest.
 
 The overall structure for the API is well defined, and some details are in progress. All feedback is appreciated.
 
-Remaining tasks are collected in the [`todo.md`](docs/todo.md) file.
-
 PSA ADAC related lower-level APIs are not yet defined.
 
 ### License
 
 The files are covered by the BSD 3-Clause license.
 
-Copyright © 2020-2021 Arm Ltd.
+Copyright © 2020-2022 Arm Ltd.
