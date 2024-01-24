@@ -18,9 +18,9 @@ The requirements for the SDM API are as follows:
 
 The SDM API enables tools to support a variety of secure debug implementations using a single API. Tool vendors are encouraged to use this API to ease the support burden on silicon and software providers, as well as themselves, and to provide a simple and easy to use integration of secure debug for their users.
 
-The goal is for silicon or software vendors to provide an implementation of the API as a shared library, that is included with tools as part of device support. The SDM library will also be included in CMSIS Device Family Packs.
+The goal is for silicon or software vendors to provide an implementation of the API as a shared library, that is included with tools as part of device support.
 
-The SDM API is designed to be debug architecture agnostic, so it can be used on debug architectures other than Arm ADI. However, a given implementation of the API will only support the debug architectures for which it was written.
+The SDM API is designed to be debug architecture agnostic, so it can be used on debug architectures other than Arm ADI. However, a given implementation of the API will only support the debug architectures for which it was written. Also, currently only the API for Arm ADI has been specified.
 
 The SDM API supports any secure debug protocol. A reference implementation is provided for the PSA Authenticated Debug Access Control (ADAC) protocol. As part of this reference implementation, additional lower-level APIs are planned. These will define layers such as a Credential provider and Debug mailbox interface.
 
