@@ -764,7 +764,7 @@ enum SDMConnectModeEnum {
     SDMConnectMode_Attach = 2,
 };
 
-//! @brief Type for default device type enum parameter.
+//! @brief Type for connect mode enum.
 typedef uint32_t SDMConnectMode;
 
 /*!
@@ -792,6 +792,20 @@ typedef struct SDMAuthenticateParameters {
     SDMBool isLastAuthentication; //!< False if at least one subsequent call to SDMAuthenticate() is expected.
 } SDMAuthenticateParameters;
 
+/*!
+ * @brief Target protection states.
+ *
+ * These enums represent potential states for the target security controls. The exact definition of each state
+ * is target-specific and can depend on the configuration of the device.
+ */
+enum SDMTargetProtectionStateEnum {
+    SDMTargetProtectionState_Unlocked = 0,  //!< Target is accessible.
+    SDMTargetProtectionState_Locked = 1,    //!< Target requires authentication to enable debug access.
+};
+
+//! @brief Type for target protection state enum.
+typedef uint32_t SDMTargetProtectionState;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -801,7 +815,7 @@ extern "C" {
 /*!
  * @brief This function is called by the debugger to start a secure debug session with the remote platform.
  *
- * @param[out] handle New handle to the SDM instance.
+ * @param[in] handle New handle to the SDM instance.
  * @param[in] params Connection details and callbacks. This pointer and all nested pointers will remain valid
  *  until SDMClose() is called, so the plugin can cache the value for later use without having to copy all
  *  the data.
@@ -810,6 +824,32 @@ extern "C" {
  * @retval SDMReturnCode_RequestFailed
  */
 SDM_EXTERN SDMReturnCode SDMOpen(SDMHandle *handle, const SDMOpenParameters *params);
+
+/*!
+ * @brief Determine whether the target is currently locked.
+ *
+ * This API is primarily intended to be used for determining whether the user should be requested to
+ * authenticate in order to debug the target. For most devices, "locked" means that the device is in the
+ * production lifecycle state and has not been previously unlocked by authentication.
+ *
+ * Even if a device is locked, some access permissions may be enabled by default. For instance, the non-secure
+ * world may be debuggable, while the secure world can only be debugged after authentication. In this case
+ * #SDMTargetProtectionState_Locked would be returned because the target is in its default production
+ * lifecycle debug access configuration. Similarly, an unlocked device does not necessary have all available,
+ * access permissions enabled. A previously performed authentication may have only unlocked a subset
+ * of permissions.
+ *
+ * @param[in] handle Handle to the SDM instance.
+ * @param[out] state On successful return, the current debug access protection state for the target.
+ *
+ * @retval SDMReturnCode_Success Target state determined.
+ * @retval SDMReturnCode_UnsupportedOperation The target does not support a method to determine its
+ *  current protection state.
+ * @retval SDMReturnCode_RequestFailed
+ * @retval SDMReturnCode_IOError
+ * @retval SDMReturnCode_TimeoutError
+ */
+SDM_EXTERN SDMReturnCode SDMGetTargetProtectionState(SDMHandle handle, SDMTargetProtectionState *state);
 
 /*!
  * @brief Perform authentication to unlock debug access.
